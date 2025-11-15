@@ -17,9 +17,15 @@ export default function HomeScreen({ navigation }) {
       />
 
       <LargeButton
-        title="🖼️ Módulo 2: Imagens"
+        title="🖼️ Módulo 1: Imagens"
         color="#FFB703"
         onPress={() => navigation.navigate('ModuloImagens')}
+      />
+
+      <LargeButton
+        title="🧮 Módulo 2: Matemática"
+        color="#c76fa1ff"
+        onPress={() => navigation.navigate('ModuleMatematica')}
       />
     </View>
   );

@@ -7,6 +7,7 @@ import HomeScreen from './screens/HomeScreen';
 import ModulePalavras from './screens/ModulePalavras';
 import ModuleImagens from './screens/ModuleImagens';
 import Resultado from './screens/Resultado';
+import ModuleMatematica from './screens/ModuleMatematica';
 
 const Stack = createNativeStackNavigator();
 
@@ -24,6 +25,7 @@ export default function App() {
         <Stack.Screen name="ModuloPalavras" component={ModulePalavras} options={{ title: 'Módulo: Palavras' }} />
         <Stack.Screen name="ModuloImagens" component={ModuleImagens} options={{ title: 'Módulo: Imagens' }} />
         <Stack.Screen name="Resultado" component={Resultado} options={{ title: 'Resultado' }} />
+        <Stack.Screen name="ModuleMatematica" component={ModuleMatematica} options={{ title: 'Módulo: Matemática' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
