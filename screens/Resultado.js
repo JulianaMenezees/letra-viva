@@ -4,6 +4,15 @@ import { View, Text } from 'react-native';
 import LargeButton from '../components/LargeButton';
 import * as Speech from 'expo-speech';
 
+const rotasModulos = {
+  Palavras: 'ModuloPalavras',
+  Imagens: 'ModuloImagens',
+  Matemática: 'ModuleMatematica',
+  Tecnologia: 'ModuleTecnology',
+  Jogos: 'ModuloJogos',
+  'Cruzadinha Tecnologia': 'CruzadinhaTecnologia',
+};
+
 export default function Resultado({ route, navigation }) {
   const { acertos, erros, modulo } = route.params;
 
@@ -11,6 +20,8 @@ export default function Resultado({ route, navigation }) {
     Speech.speak(`Você concluiu o módulo ${modulo}.`, { language: 'pt-BR' });
     Speech.speak(`Você acertou ${acertos} e errou ${erros}.`, { language: 'pt-BR' });
   }, []);
+
+  const rotaRefazer = rotasModulos[modulo];
 
   return (
     <View
@@ -29,15 +40,13 @@ export default function Resultado({ route, navigation }) {
       <Text style={{ fontSize: 24, color: '#333', marginBottom: 10 }}>✅ Acertos: {acertos}</Text>
       <Text style={{ fontSize: 24, color: '#333', marginBottom: 30 }}>❌ Erros: {erros}</Text>
 
-      <LargeButton
-        title="🔁 Refazer módulo"
-        color="#6C63FF"
-        onPress={() =>
-          navigation.replace(
-            modulo === 'Palavras' ? 'ModuloPalavras' : 'ModuloImagens'
-          )
-        }
-      />
+      {rotaRefazer && (
+        <LargeButton
+          title="🔁 Refazer módulo"
+          color="#6C63FF"
+          onPress={() => navigation.replace(rotaRefazer)}
+        />
+      )}
 
       <LargeButton
         title="🏠 Voltar ao Início"

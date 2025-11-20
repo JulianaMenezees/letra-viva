@@ -68,6 +68,11 @@ const handleLogout = async () => {
         onPress={() => navigation.navigate('ModuleMatematica')}
       />
 
+    <LargeButton
+        title="🧮 Módulo 3: Tecnologia"
+        color="#4A88E0"
+        onPress={() => navigation.navigate('ModuleTecnology')}
+      />
       
       <LargeButton
         title=" 🎮 Módulo 4: Jogos"

@@ -11,6 +11,8 @@ import HomeScreen from './screens/HomeScreen';
 import ModulePalavras from './screens/ModulePalavras';
 import ModuleImagens from './screens/ModuleImagens';
 import ModuleMatematica from './screens/ModuleMatematica';
+import ModuleTecnology from './screens/ModuleTecnology';
+import CruzadinhaTecnologia from './screens/crosswordTec';
 import ModuloJogos from './screens/ModuloJogos';
 import CacaPalavrasScreen from './screens/CacaPalavrasScreen';
 
@@ -67,6 +69,8 @@ export default function App() {
         <Stack.Screen name="ModuloPalavras" component={ModulePalavras} />
         <Stack.Screen name="ModuloImagens" component={ModuleImagens} />
         <Stack.Screen name="ModuleMatematica" component={ModuleMatematica} />
+        <Stack.Screen name="ModuleTecnology" component={ModuleTecnology} />
+        <Stack.Screen name="CruzadinhaTecnologia" component={CruzadinhaTecnologia}/>
         <Stack.Screen name="ModuloJogos" component={ModuloJogos} />
         <Stack.Screen name="CacaPalavras" component={CacaPalavrasScreen} />
         <Stack.Screen name="Resultado" component={Resultado} />
