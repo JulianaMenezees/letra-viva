@@ -51,15 +51,9 @@ const handleLogout = async () => {
       
 
       <LargeButton
-        title="🧩 Módulo 1: Palavras"
+        title="🧩 Módulo 1: Português"
         color="#6C63FF"
         onPress={() => navigation.navigate('ModuloPalavras')}
-      />
-
-      <LargeButton
-        title="🖼️ Módulo 1: Imagens"
-        color="#FFB703"
-        onPress={() => navigation.navigate('ModuloImagens')}
       />
 
       <LargeButton

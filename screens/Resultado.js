@@ -5,8 +5,7 @@ import LargeButton from '../components/LargeButton';
 import * as Speech from 'expo-speech';
 
 const rotasModulos = {
-  Palavras: 'ModuloPalavras',
-  Imagens: 'ModuloImagens',
+  Português: 'ModuloPalavras',
   Matemática: 'ModuleMatematica',
   Tecnologia: 'ModuleTecnology',
   Jogos: 'ModuloJogos',
@@ -52,7 +51,7 @@ export default function Resultado({ route, navigation }) {
         title="🏠 Voltar ao Início"
         color="#4A90E2"
         onPress={() => navigation.navigate('Início')}
-      />
+      />  
     </View>
   );
 }

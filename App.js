@@ -9,7 +9,6 @@ import PinSetupScreen from './screens/PinSetupScreen';
 import LoginScreen from './screens/LoginScreen';   // PIN + BIOMETRIA
 import HomeScreen from './screens/HomeScreen';
 import ModulePalavras from './screens/ModulePalavras';
-import ModuleImagens from './screens/ModuleImagens';
 import ModuleMatematica from './screens/ModuleMatematica';
 import ModuleTecnology from './screens/ModuleTecnology';
 import CruzadinhaTecnologia from './screens/crosswordTec';
@@ -67,7 +66,6 @@ export default function App() {
         {/* 5) Fluxo principal — só acessível após login */}
         <Stack.Screen name="Início" component={HomeScreen} />
         <Stack.Screen name="ModuloPalavras" component={ModulePalavras} />
-        <Stack.Screen name="ModuloImagens" component={ModuleImagens} />
         <Stack.Screen name="ModuleMatematica" component={ModuleMatematica} />
         <Stack.Screen name="ModuleTecnology" component={ModuleTecnology} />
         <Stack.Screen name="CruzadinhaTecnologia" component={CruzadinhaTecnologia}/>
