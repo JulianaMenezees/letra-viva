@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, Modal, Dimensions, StyleSheet, ScrollView } from 'react-native';
-import * as Speech from 'expo-speech'; 
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, Modal, StyleSheet, ScrollView } from 'react-native';
+import * as Speech from 'expo-speech';
 import { techActivities } from '../utils/techData';
 import LargeButton from '../components/LargeButton';
 
 export default function ModuleTecnology({ navigation }) {
+
   const [index, setIndex] = useState(0);
   const [resposta, setResposta] = useState('');
   const [showPopup, setShowPopup] = useState(false);
@@ -15,6 +16,14 @@ export default function ModuleTecnology({ navigation }) {
 
   const atual = techActivities[index];
 
+  // 🔤 Normaliza texto para comparação justa
+  const normalizar = (txt) =>
+    txt
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toUpperCase()
+      .trim();
+
   useEffect(() => {
     setResposta('');
     setMensagemErro('');
@@ -22,10 +31,11 @@ export default function ModuleTecnology({ navigation }) {
   }, [index]);
 
   const verificar = () => {
-    const digitado = resposta.trim().toUpperCase();
+    const digitado = normalizar(resposta);
+    const esperado = normalizar(atual.palavra);
 
-    if (digitado === atual.palavra) {
-      setAcertos(acertos + 1);
+    if (digitado === esperado) {
+      setAcertos(prev => prev + 1);
       setShowPopup(true);
       Speech.speak('Muito bem!', { language: 'pt-BR' });
     } else {
@@ -39,7 +49,6 @@ export default function ModuleTecnology({ navigation }) {
 
       setMensagemErro('Resposta incorreta, tente novamente.');
 
-      // BLOQUEIO DE TENTATIVAS
       if (novoErro >= 3) {
         navigation.replace('Resultado', {
           acertos,
@@ -53,20 +62,25 @@ export default function ModuleTecnology({ navigation }) {
   const proxima = () => {
     setShowPopup(false);
 
-    if (index < techActivities.length - 1) {
-      setIndex(index + 1);
-    } else {
-      // Final do módulo → checar se libera cruzadinha
-      if (acertos >= 7) {
-        navigation.replace('CruzadinhaTecnologia');
+    // 👉 Última questão
+    if (index === techActivities.length - 1) {
+
+  const totalAcertos = acertos; // <-- CORRETO AGORA
+
+  if (totalAcertos >= 7) {
+        navigation.replace('CruzadinhaTecnologia', { liberado: true });
       } else {
         navigation.replace('Resultado', {
-          acertos,
+          acertos: totalAcertos,
           erros,
           modulo: 'Tecnologia',
         });
       }
-    }
+      return;
+  }
+
+    // 👉 AVANÇA NORMALMENTE
+    setIndex(index + 1);
   };
 
   return (
@@ -103,10 +117,13 @@ export default function ModuleTecnology({ navigation }) {
         <View style={styles.popupFundo}>
           <View style={styles.popup}>
             <Text style={styles.popupTitulo}>{atual.palavra}</Text>
-
             <Text style={styles.popupTexto}>{atual.explicacao}</Text>
 
-            <LargeButton title="Continuar ➜" color="#4CAF50" onPress={proxima} />
+            <LargeButton
+              title="Continuar ➜"
+              color="#4CAF50"
+              onPress={proxima}
+            />
           </View>
         </View>
       </Modal>
