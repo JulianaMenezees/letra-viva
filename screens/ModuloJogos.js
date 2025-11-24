@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import useTTS from '../utils/useTTS';
 
 export default function ModuloJogos({ navigation }) {
@@ -7,25 +7,57 @@ export default function ModuloJogos({ navigation }) {
 
   useEffect(() => {
     speak(
-      'Você está no módulo de jogos. Aqui você pode treinar seus conhecimentos, jogando!. Espero que você se divirta. Aperte em 1 para ir ao jogo de caça palavras. Outros jogos serão adicionados em breve.'
+      'Você está no módulo de jogos. Aqui você pode treinar seus conhecimentos jogando! Aperte em um dos botões para começar.'
     );
   }, []);
 
-  const GameButton = ({ title, emoji, onPress }) => (
-    <TouchableOpacity style={styles.button} onPress={onPress}>
-      <Text style={styles.buttonText}>{emoji} {title}</Text>
+  const GameButton = ({ title, icon, onPress }) => (
+    <TouchableOpacity style={styles.gameCard} onPress={onPress}>
+      <Image source={icon} style={styles.icon} resizeMode="contain" />
+      <Text style={styles.gameText}>{title}</Text>
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🎮 Módulo de Jogos</Text>
+      {/* <Text style={styles.title}>🎮 Módulo de Jogos</Text> */}
 
       <GameButton
         title="1. Caça Palavras"
-        emoji="🧩"
-        onPress={() => navigation.navigate('CacaPalavras')}
+        icon={require("../assets/images/jogos/cacaPalavras/home_caca.png")}
+        onPress={() => navigation.navigate("LevelsCacaPalavras")}
       />
+
+      <GameButton
+        title="2. Jogo da Memória"
+        icon={require("../assets/images/jogos/cacaPalavras/home_memoria.png")}
+        onPress={() =>
+          navigation.navigate("LevelsJogoMemoria", {
+            gameRouteName: "JogoMemoria",
+            progressKey: "memoria_progress_global",
+            totalLevels: 4,
+          })
+        }
+      />
+
+      <GameButton
+        title="3. Dominó"
+        icon={require("../assets/images/jogos/cacaPalavras/home_domino.png")}
+        onPress={() => navigation.navigate("LevelsDomino")}
+      />
+
+      <GameButton
+        title="4. Quebra Cabeça"
+        icon={require("../assets/images/jogos/cacaPalavras/home_quebra.png")}
+        onPress={() => navigation.navigate("LevelsQuebraCabeca")}
+      />
+
+      <GameButton
+        title="5. Pista de Jogos"
+        icon={require("../assets/images/jogos/cacaPalavras/home_pista.png")}
+        onPress={() => navigation.navigate("LevelsTabuleiro")}
+      />
+
     </View>
   );
 }
@@ -33,28 +65,44 @@ export default function ModuloJogos({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFDF7',
+    backgroundColor: '#add778',
     justifyContent: "center",
-    alignItems: "center",
-    padding: 20
-  },
-  title: {
-    fontSize: 30,
-    marginBottom: 30,
-    fontWeight: "bold",
-    color: "#4A90E2"
-  },
-  button: {
-    width: "90%",
-    backgroundColor: "#6C63FF",
+    alignItems: 'center',
     padding: 20,
-    marginBottom: 15,
-    borderRadius: 12,
-    alignItems: "center"
   },
-  buttonText: {
+  // title: {
+  //   fontSize: 32,
+  //   marginBottom: 25,
+  //   fontWeight: 'bold',
+  //   color: '#4A90E2',
+  // },
+
+  /** CARD BONITO */
+  gameCard: {
+    width: '92%',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: '#ffffffff',
+    padding: 18,
+    marginBottom: 15,
+    borderRadius: 15,
+    borderWidth: 5,
+    borderColor: "#e5ddc8",
+    elevation: 6, // sombra Android
+    shadowColor: "#000", // sombra iOS
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 3 },
+  },
+
+  icon: {
+    width: 80,
+    height: 80,
+    marginRight: 20,
+  },
+
+  gameText: {
     fontSize: 20,
-    color: "#fff",
-    fontWeight: "bold"
-  }
+    fontWeight: "bold",
+    color: "#6b6f76",
+  },
 });

@@ -13,7 +13,16 @@ import ModuleMatematica from './screens/ModuleMatematica';
 import ModuleTecnology from './screens/ModuleTecnology';
 import CruzadinhaTecnologia from './screens/crosswordTec';
 import ModuloJogos from './screens/ModuloJogos';
+import LevelsCacaPalavras from './screens/LevelsCacaPalavras';
 import CacaPalavrasScreen from './screens/CacaPalavrasScreen';
+import JogoMemoriaScreen from './screens/JogoMemoriaScreen';
+import LevelsJogoMemoria from './screens/LevelsJogoMemoria';
+import DominoScreen from './screens/DominoScreen';
+import LevelsDominoScreen from './screens/LevelsDominoScreen';
+import QuebraCabecaScreen from './screens/QuebraCabecaScreen';
+import LevelsQuebraCabeca from './screens/LevelsQuebraCabeca';
+import TabuleiroScreen from './screens/TabuleiroScreen';
+import LevelsTabuleiro from './screens/LevelsTabuleiro';
 
 import Resultado from './screens/Resultado';
 
@@ -68,9 +77,18 @@ export default function App() {
         <Stack.Screen name="ModuloPalavras" component={ModulePalavras} />
         <Stack.Screen name="ModuleMatematica" component={ModuleMatematica} />
         <Stack.Screen name="ModuleTecnology" component={ModuleTecnology} />
-        <Stack.Screen name="CruzadinhaTecnologia" component={CruzadinhaTecnologia}/>
+        <Stack.Screen name="CruzadinhaTecnologia" component={CruzadinhaTecnologia} />
         <Stack.Screen name="ModuloJogos" component={ModuloJogos} />
+        <Stack.Screen name="LevelsCacaPalavras" component={LevelsCacaPalavras} />
         <Stack.Screen name="CacaPalavras" component={CacaPalavrasScreen} />
+        <Stack.Screen name="LevelsJogoMemoria" component={LevelsJogoMemoria} />
+        <Stack.Screen name="JogoMemoria" component={JogoMemoriaScreen} />
+        <Stack.Screen name="DominoScreen" component={DominoScreen} />
+        <Stack.Screen name="LevelsDomino" component={LevelsDominoScreen} />
+        <Stack.Screen name="QuebraCabeca" component={QuebraCabecaScreen} />
+        <Stack.Screen name="LevelsQuebraCabeca" component={LevelsQuebraCabeca} />
+        <Stack.Screen name="Tabuleiro" component={TabuleiroScreen} />
+        <Stack.Screen name="LevelsTabuleiro" component={LevelsTabuleiro} />
         <Stack.Screen name="Resultado" component={Resultado} />
       </Stack.Navigator>
     </NavigationContainer>
