@@ -76,7 +76,6 @@ export default function App() {
         <Stack.Screen name="ModuloPalavras" component={ModulePalavras} />
         <Stack.Screen name="ModuleMatematica" component={ModuleMatematica} />
         <Stack.Screen name="ModuleTecnology" component={ModuleTecnology} />
-        <Stack.Screen name="CruzadinhaTecnologia" component={CruzadinhaTecnologia} />
         <Stack.Screen name="ModuloJogos" component={ModuloJogos} />
         <Stack.Screen name="LevelsCacaPalavras" component={LevelsCacaPalavras} />
         <Stack.Screen name="CacaPalavras" component={CacaPalavrasScreen} />
