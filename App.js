@@ -11,7 +11,6 @@ import HomeScreen from './screens/HomeScreen';
 import ModulePalavras from './screens/ModulePalavras';
 import ModuleMatematica from './screens/ModuleMatematica';
 import ModuleTecnology from './screens/ModuleTecnology';
-import CruzadinhaTecnologia from './screens/crosswordTec';
 import ModuloJogos from './screens/ModuloJogos';
 import LevelsCacaPalavras from './screens/LevelsCacaPalavras';
 import CacaPalavrasScreen from './screens/CacaPalavrasScreen';

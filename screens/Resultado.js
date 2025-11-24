@@ -9,7 +9,6 @@ const rotasModulos = {
   Matemática: 'ModuleMatematica',
   Tecnologia: 'ModuleTecnology',
   Jogos: 'ModuloJogos',
-  'Cruzadinha Tecnologia': 'CruzadinhaTecnologia',
 };
 
 export default function Resultado({ route, navigation }) {
