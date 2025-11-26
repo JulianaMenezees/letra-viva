@@ -1,4 +1,4 @@
-// JogoMemoriaScreen.js
+// JogoMemoriaScreen.js (versão sem o cartão ao redor; cards maiores e centrados)
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
@@ -20,43 +20,57 @@ function shuffle(array) {
   }
   return a;
 }
-
 function repeatEmoji(emoji, times) {
   return Array(times).fill(emoji).join(' ');
 }
 
 export default function JogoMemoriaScreen({ navigation, route }) {
-  // level param (1..4). default 1
   const level = Math.max(1, Math.min(4, route?.params?.level || 1));
-  // progressKey vem dos params; se não passar, usa padrao para retrocompatibilidade
   const progressKey = route?.params?.progressKey || 'caca_progress_global';
-  const { speak } = useTTS ? useTTS() : { speak: () => {} };
+  const { speak } = useTTS ? useTTS() : { speak: () => { } };
 
-  // Difficulty map for 4 levels (soft progression)
   const DIFFICULTY = useMemo(() => ({
     1: { pairs: 3, columns: 2, fruit: '🍎' },  // 6 cards
-    2: { pairs: 4, columns: 3, fruit: '🍌' },  // 8 cards
-    3: { pairs: 5, columns: 3, fruit: '🍒' },  // 10 cards (middle, slightly harder)
-    4: { pairs: 6, columns: 4, fruit: '🍇' },  // 12 cards
+    2: { pairs: 4, columns: 3, fruit: '🍊' },  // 8 cards
+    3: { pairs: 5, columns: 3, fruit: '🍓' },  // 10 cards
+    4: { pairs: 6, columns: 3, fruit: '🍇' },  // 12 cards
   }), []);
 
   const { pairs, columns, fruit } = DIFFICULTY[level] || DIFFICULTY[1];
 
-  // dynamic card size
-  const { width } = Dimensions.get('window');
+  const { width, height } = Dimensions.get('window');
   const CARD_MARGIN = 8;
-  const horizontalPadding = 32;
-  const CARD_SIZE = Math.floor((width - horizontalPadding - CARD_MARGIN * (columns * 2)) / columns);
+  const H_PADDING = 24; // padding horizontal total
+  const V_PADDING = 24; // padding vertical total
+
+  // número total de cartas e linhas esperadas
+  const totalCards = pairs * 2;
+  const rows = Math.ceil(totalCards / columns);
+
+  // espaço reservado para header + controles (se ajustar header, altere aqui)
+  const RESERVED_TOP = 160; // ajuste se seu header for maior/menor
+  const RESERVED_BOTTOM = 60;
+  const availableHeight = Math.max(120, height - RESERVED_TOP - RESERVED_BOTTOM - V_PADDING);
+
+  // cálculo máximo permitido por largura e por altura (por linha)
+  const maxByWidth = Math.floor((width - H_PADDING - CARD_MARGIN * (columns + 1)) / columns);
+  const maxByHeight = Math.floor((availableHeight - CARD_MARGIN * (rows + 1)) / rows);
+
+  // Prioriza manter as cartas grandes: tenta o maior possível dentro dos limites.
+  // Garante um mínimo razoável (80) para não ficar pequeno em telas muito estreitas.
+  const CARD_SIZE = Math.max(80, Math.min(260, Math.min(maxByWidth, maxByHeight)));
+
+  // responsive header icon size
+  const headerIconSize = Math.min(130, Math.floor(width * 0.26));
 
   const [deck, setDeck] = useState([]);
-  const [flipped, setFlipped] = useState([]); // indexes currently flipped
+  const [flipped, setFlipped] = useState([]);
   const [matchedIds, setMatchedIds] = useState(new Set());
   const [moves, setMoves] = useState(0);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     startNewGame();
-    // speak an instruction when opening a level
     speak?.(`Você abriu o nível ${level}. Encontre os pares que representam as mesmas quantidades.`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [level]);
@@ -64,29 +78,19 @@ export default function JogoMemoriaScreen({ navigation, route }) {
   function buildDeck(nPairs) {
     const cards = [];
     for (let i = 1; i <= nPairs; i++) {
-      cards.push({
-        id: `fruit-${i}`,
-        kind: 'fruit',
-        count: i,
-        face: repeatEmoji(fruit, i),
-      });
-      cards.push({
-        id: `dots-${i}`,
-        kind: 'dots',
-        count: i,
-        face: repeatEmoji('⚫', i),
-      });
+      cards.push({ id: `fruit-${i}`, kind: 'fruit', count: i, face: repeatEmoji(fruit, i) });
+      cards.push({ id: `dots-${i}`, kind: 'dots', count: i, face: repeatEmoji('⚪', i) });
     }
     return shuffle(cards);
   }
 
   function startNewGame() {
     const d = buildDeck(pairs);
+    console.log('[startNewGame] deck gerado:', d.map((x, idx) => ({ idx, id: x.id, kind: x.kind, count: x.count })));
     setDeck(d);
     setMatchedIds(new Set());
     setMoves(0);
     setBusy(false);
-    // iniciar com cartas viradas para baixo
     setFlipped([]);
   }
 
@@ -94,23 +98,13 @@ export default function JogoMemoriaScreen({ navigation, route }) {
     try {
       const raw = await AsyncStorage.getItem(progressKey);
       let data;
-      try {
-        data = raw ? JSON.parse(raw) : { completed: [] };
-      } catch (err) {
-        data = { completed: [] };
-      }
-
+      try { data = raw ? JSON.parse(raw) : { completed: [] }; } catch (err) { data = { completed: [] }; }
       const completedRaw = Array.isArray(data.completed) ? data.completed : [];
       const completedNums = completedRaw.map((v) => Number(v)).filter((n) => Number.isFinite(n));
-
       if (!completedNums.includes(lvl)) {
-        const newCompleted = [...completedNums, lvl]
-          .filter((v, i, a) => a.indexOf(v) === i)
-          .sort((a, b) => a - b);
+        const newCompleted = [...completedNums, lvl].filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
         await AsyncStorage.setItem(progressKey, JSON.stringify({ completed: newCompleted }));
         console.log('[saveLevelComplete] saved', progressKey, newCompleted);
-      } else {
-        console.log('[saveLevelComplete] já tinha:', lvl);
       }
     } catch (err) {
       console.error('Erro ao salvar progresso', err);
@@ -121,8 +115,8 @@ export default function JogoMemoriaScreen({ navigation, route }) {
     if (busy) return;
     const card = deck[index];
     if (!card) return;
-    if (matchedIds.has(card.id)) return; // already matched
-    if (flipped.includes(index)) return; // already flipped
+    if (matchedIds.has(card.id)) return;
+    if (flipped.includes(index)) return;
 
     const newFlipped = [...flipped, index];
     setFlipped(newFlipped);
@@ -134,45 +128,27 @@ export default function JogoMemoriaScreen({ navigation, route }) {
       const c1 = deck[i1];
       const c2 = deck[i2];
 
-      // match: same count and different kind
       if (c1.count === c2.count && c1.kind !== c2.kind) {
         setTimeout(() => {
           setMatchedIds(prev => {
-            const nxt = new Set(prev);
-            nxt.add(c1.id);
-            nxt.add(c2.id);
-            return nxt;
+            const nxt = new Set(prev); nxt.add(c1.id); nxt.add(c2.id); return nxt;
           });
-          setFlipped([]);
-          setBusy(false);
-          speak?.('Acertou!');
-        }, 450);
+          setFlipped([]); setBusy(false); speak?.('Acertou!');
+        }, 400);
       } else {
-        setTimeout(() => {
-          setFlipped([]);
-          setBusy(false);
-          speak?.('Tente outra vez.');
-        }, 700);
+        setTimeout(() => { setFlipped([]); setBusy(false); speak?.('Tente outra vez.'); }, 700);
       }
     }
   }
 
-  // quando todas as cartas forem casadas, grava e volta para níveis
   useEffect(() => {
     if (deck.length > 0 && matchedIds.size === deck.length) {
       const finish = async () => {
         speak?.('Parabéns! Você completou o nível.');
-        await saveLevelComplete(level); // grava progresso nesta chave
-        // mostra alert com opções; ao voltar a tela de níveis ela recarrega via listener 'focus'
+        await saveLevelComplete(level);
         Alert.alert('Parabéns', `Você completou o nível ${level} em ${moves} jogadas.`, [
-          {
-            text: 'Voltar aos níveis',
-            onPress: () => navigation.goBack(),
-          },
-          {
-            text: 'Jogar de novo',
-            onPress: () => startNewGame(),
-          },
+          { text: 'Voltar aos níveis', onPress: () => navigation.goBack() },
+          { text: 'Jogar de novo', onPress: () => startNewGame() },
         ]);
       };
       setTimeout(finish, 300);
@@ -197,73 +173,144 @@ export default function JogoMemoriaScreen({ navigation, route }) {
         {isFlipped ? (
           <Text style={[styles.cardText, { fontSize: Math.max(18, Math.floor(CARD_SIZE / 4)) }]}>{item.face}</Text>
         ) : (
-          <Text style={[styles.backText, { fontSize: Math.max(20, Math.floor(CARD_SIZE / 3)) }]}>🔷</Text>
+          <Text style={[styles.backText, {  color: "#6b6f76", fontSize: Math.max(24, Math.floor(CARD_SIZE / 2.8)) }]}>◆</Text>
         )}
       </TouchableOpacity>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Nível {level} — Jogo da Memória</Text>
+    <View style={styles.outer}>
+      {/* header (estrelas + nível + som) */}
+      <View style={styles.headerContainer}>
+        <View style={styles.headerCard}>
+          <View style={styles.starsRow}>
+            {Array.from({ length: 4 }).map((_, i) => {
+              const filled = i < Math.min(4, level);
+              return <Text key={i} style={[styles.starEmoji, filled ? styles.starEmojiFilled : styles.starEmojiEmpty]}>{filled ? '★' : '☆'}</Text>;
+            })}
+          </View>
 
-      <View style={styles.infoRow}>
-        <Text style={styles.info}>Movimentos: {moves}</Text>
-        <View style={{ flexDirection: 'row' }}>
-          <TouchableOpacity onPress={startNewGame} style={styles.smallButton}>
-            <Text style={styles.smallButtonText}>Reiniciar</Text>
+          <TouchableOpacity activeOpacity={0.8} onPress={() => speak(`Nível ${level}`)} style={styles.heroButton}>
+            <View style={[styles.heroCircle, { width: headerIconSize + 20, height: headerIconSize + 20, borderRadius: (headerIconSize + 20) / 2, transform: [{ translateX: -10 }], }]}>
+              <Text style={[styles.heroNumber, { fontSize: Math.round(headerIconSize * 0.55), position: 'absolute', left: 0, right: 0, textAlign: 'center' }]}>{level}</Text>
+            </View>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.smallButton, { marginLeft: 8 }]}>
-            <Text style={styles.smallButtonText}>Voltar</Text>
+
+          <TouchableOpacity style={styles.speakerButton} onPress={() => speak(`Vamos jogar! Nível ${level}`)}>
+            <Text style={styles.speakerEmoji}>🔊</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      <FlatList
-        data={deck}
-        keyExtractor={(i, idx) => i.id + '-' + idx}
-        renderItem={renderCard}
-        numColumns={columns}
-        contentContainerStyle={[styles.grid, { paddingBottom: 20 }]}
-        scrollEnabled={true}
-      />
-
-      <View style={styles.hintRow}>
-        <Text style={styles.hint}>Toque em duas cartas para encontrar os pares (frutas ⇄ bolinhas).</Text>
+      {/* controles */}
+      <View style={styles.infoRow}>
+        {/* <TouchableOpacity onPress={startNewGame} style={styles.smallButton}>
+          <Text style={styles.smallButtonText}>↻</Text>
+        </TouchableOpacity> */}
+        {/* <Text style={styles.infoText}>  Movimentos: {moves}</Text> */}
       </View>
+
+      {/* FlatList diretamente (sem wrapper) — columnWrapperStyle centraliza colunas */}
+      <View style={styles.cardsWrapper}>
+        <FlatList
+          data={deck}
+          keyExtractor={(item) => item.id}
+          renderItem={renderCard}
+          numColumns={columns}
+          contentContainerStyle={{
+            paddingHorizontal: H_PADDING / 2,
+            paddingBottom: 30,
+            paddingTop: 8,
+          }}
+          columnWrapperStyle={{ justifyContent: "center" }}
+          showsVerticalScrollIndicator={false}
+          extraData={[flipped, Array.from(matchedIds)]}
+        />
+      </View>
+
     </View>
   );
 }
 
-const CARD_MARGIN = 8;
-
+/* ---------- STYLES ---------- */
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#FFFDF7', alignItems: 'center' },
-  title: { fontSize: 24, fontWeight: '800', marginTop: 8, marginBottom: 12, color: '#4A90E2' },
-  infoRow: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+  outer: { flex: 1, backgroundColor: '#FFFDF7' },
+
+  headerContainer: {
+    width: "100%",
+    alignItems: "center",
+    paddingTop: 50,
+    paddingBottom: 6,
+    backgroundColor: "#add778",
   },
-  info: { fontSize: 16, fontWeight: '700' },
+
+  headerCard: {
+    width: "92%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#fffefc",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+
+    // sombra suave
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
+
+  cardsWrapper: {
+    width: "98%",
+    alignSelf: "center",
+
+    backgroundColor: "#fff7ee",
+    borderRadius: 16,
+
+    paddingVertical: 14,
+    paddingHorizontal: 5,
+
+    // sombra
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+
+    // muito importante para evitar "estouro"
+    flexShrink: 1,
+  },
+
+
+  starsRow: { flexDirection: 'row', alignItems: 'center' },
+  starEmoji: { fontSize: 26, marginRight: 6, lineHeight: 30 },
+  starEmojiFilled: { color: '#FFD24D' },
+  starEmojiEmpty: { color: '#C4C4C4' },
+
+  heroButton: { alignItems: 'center', justifyContent: 'center' },
+  heroCircle: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF6F7', borderWidth: 1, borderColor: 'rgba(236,112,122,0.14)' },
+  heroNumber: { color: '#ec707a', fontWeight: '900', textAlign: 'center' },
+
+  speakerButton: { width: 48, height: 48, borderRadius: 48, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.04)', elevation: 3 },
+  speakerEmoji: { fontSize: 20 },
+
+  infoRow: { width: '100%', flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', paddingHorizontal: 18, marginTop: 10 },
   smallButton: { backgroundColor: '#6C63FF', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
   smallButtonText: { color: '#fff', fontWeight: '700' },
+  infoText: { fontSize: 16, fontWeight: '700', marginLeft: 12 },
+
   grid: { alignItems: 'center', justifyContent: 'center' },
-  card: {
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  cardFaceDown: { backgroundColor: '#e2e8f0' },
+  card: { borderRadius: 12, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 6, elevation: 3 },
+  cardFaceDown: { backgroundColor: '#fee78d' },
   cardFaceUp: { backgroundColor: '#fff' },
-  cardText: { textAlign: 'center' },
+  cardText: {
+    textAlign: 'center',
+    fontWeight: '800',
+    flexWrap: 'nowrap',
+    includeFontPadding: false,
+  },
   backText: { textAlign: 'center' },
-  hintRow: { marginTop: 18, paddingHorizontal: 16 },
-  hint: { fontSize: 16, textAlign: 'center', color: '#4a5568', maxWidth: 420 },
 });

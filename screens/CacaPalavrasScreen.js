@@ -6,7 +6,6 @@ import {
   StyleSheet,
   SafeAreaView,
   Image,
-  ImageBackground,
   ScrollView,
   useWindowDimensions,
   Modal,
@@ -24,7 +23,7 @@ const LEVELS = {
   1: ["CASA", "BOLA", "PATO", "GATO"],
   2: ["MESA", "SAPO", "RATO", "URSO", "SOFA", "CHAVE", "BOLO", "SOL"],
   3: [
-    "MAR",
+    "LUA",
     "UVA",
     "MEL",
     "CARRO",
@@ -49,6 +48,7 @@ const WORD_IMAGES = {
   PATO: require("../assets/images/jogos/cacaPalavras/pato.png"),
   GATO: require("../assets/images/jogos/cacaPalavras/gato.png"),
   MESA: require("../assets/images/jogos/cacaPalavras/mesa.png"),
+
   SAPO: require("../assets/images/jogos/cacaPalavras/sapo.png"),
   RATO: require("../assets/images/jogos/cacaPalavras/rato.png"),
   URSO: require("../assets/images/jogos/cacaPalavras/urso.png"),
@@ -56,7 +56,8 @@ const WORD_IMAGES = {
   CHAVE: require("../assets/images/jogos/cacaPalavras/chave.png"),
   SOL: require("../assets/images/jogos/cacaPalavras/sol.png"),
   BOLO: require("../assets/images/jogos/cacaPalavras/bolo.png"),
-  MAR: require("../assets/images/jogos/cacaPalavras/mar.png"),
+
+  LUA: require("../assets/images/jogos/cacaPalavras/lua.png"),
   UVA: require("../assets/images/jogos/cacaPalavras/uva.png"),
   MEL: require("../assets/images/jogos/cacaPalavras/mel.png"),
   CARRO: require("../assets/images/jogos/cacaPalavras/carro.png"),
@@ -79,8 +80,6 @@ function onlyLetters(str) {
     .filter((ch) => /[A-Za-zÀ-ÖØ-öø-ÿ]/.test(ch))
     .join("");
 }
-
-const TOP_IMAGE = "/mnt/data/aae93119-ceb0-44cd-a0b1-1cfeb2ee94e3.png";
 
 export default function CacaPalavrasScreen() {
   const { speak } = useTTS();
@@ -134,7 +133,8 @@ export default function CacaPalavrasScreen() {
   }, [levelNum]);
 
   useEffect(() => {
-    speak(`Vamos jogar caça palavras! As palavras escondidas são: ${SEARCH_WORDS.join(", ")}`);
+    // anúncio inicial por voz (útil para jogadores que não leem)
+    speak(`Vamos jogar! As palavras do nível são: ${SEARCH_WORDS.join(", ")}`);
   }, [SEARCH_WORDS, speak]);
 
   useEffect(() => {
@@ -245,18 +245,79 @@ export default function CacaPalavrasScreen() {
     setCurrentSelection("");
   }
 
+  // calcula tamanho do ícone central responsivo
+  const headerIconSize = Math.min(140, Math.floor(width * 0.28));
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <ImageBackground source={{ uri: TOP_IMAGE }} style={styles.topImage} imageStyle={{ opacity: 0.12 }}>
-          <View style={styles.topBar}>
-            <Image
-              source={require("../assets/images/jogos/cacaPalavras/titulo.png")}
-              style={styles.titleImage}
-              resizeMode="contain"
-            />
+        {/* HEADER limpo, sem imagem de fundo nem título escrito */}
+        <View style={styles.headerContainer}>
+          <View style={styles.headerCard}>
+            <View style={styles.starsRow}>
+              {Array.from({ length: 3 }).map((_, i) => {
+                const filled = i < Math.min(3, levelNum);
+                return (
+                  <Text
+                    key={i}
+                    style={[styles.starEmoji, filled ? styles.starEmojiFilled : styles.starEmojiEmpty]}
+                    accessible
+                    accessibilityLabel={filled ? `Estrela ${i + 1} preenchida` : `Estrela ${i + 1} vazia`}
+                  >
+                    {filled ? "★" : "☆"}
+                  </Text>
+                );
+              })}
+            </View>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => speak(`Nível ${levelNum}`)}
+              accessibilityLabel={`Falar nível ${levelNum}`}
+              style={styles.heroButton}
+            >
+              <View
+                style={[
+                  styles.heroCircle,
+                  {
+                    width: headerIconSize + 20,
+                    height: headerIconSize + 20,
+                    borderRadius: (headerIconSize + 20) / 2,
+                    transform: [{ translateX: -10 }],
+                  },
+                ]}
+              >
+
+                {/* OPÇÃO 1: centralização precisa usando position:absolute */}
+                <Text
+                  style={[
+                    styles.heroNumber,
+                    {
+                      fontSize: Math.round(headerIconSize * 0.55),
+                      position: "absolute",
+                      left: 0,
+                      right: 0,
+                      textAlign: "center",
+                      // transform: [{ translateX: -6 }],
+                    },
+                  ]}
+                >
+                  {levelNum}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.speakerButton}
+              onPress={() => speak(`Vamos jogar! Nível ${levelNum}`)}
+              activeOpacity={0.75}
+              accessible
+              accessibilityLabel="Ouvir instrução em áudio"
+            >
+              <Text style={styles.speakerEmoji}>🔊</Text>
+            </TouchableOpacity>
           </View>
-        </ImageBackground>
+        </View>
 
         <Modal visible={showCongrats} transparent animationType="fade">
           <View style={styles.modalOverlay}>
@@ -309,7 +370,7 @@ export default function CacaPalavrasScreen() {
 
             {/* Scroll horizontal para quando for necessário rolar */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={[styles.grid, { marginTop: 12 }]}> 
+              <View style={[styles.grid, { marginTop: 12 }]}>
                 {grid.map((row, r) => (
                   <View key={r} style={styles.row}>
                     {row.map((letter, c) => {
@@ -435,21 +496,112 @@ function generateGrid(words = [], gridSize = 8) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#e5ddc8" },
+  safe: { flex: 1, backgroundColor: "#fff" },
   scroll: { paddingBottom: 40 },
-  topImage: {
+
+  /* HEADER sem imagem e sem fundo verde — cartão limpo */
+  headerContainer: {
     width: "100%",
-    paddingVertical: 1,
+    alignItems: "center",
+    paddingTop: 50,
+    paddingBottom: 6,
+    backgroundColor: "#add778",
+  },
+  headerCard: {
+    width: "92%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#fffefc",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    // sombra leve
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
+
+  starsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+  },
+  starEmoji: {
+    fontSize: 28,
+    marginRight: 6,
+    lineHeight: 32,
+  },
+  starEmojiFilled: {
+    color: "#FFD24D",
+  },
+  starEmojiEmpty: {
+    color: "#C4C4C4",
+  },
+
+  heroButton: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#cdebb0",
   },
-  titleImage: {
-    height: 230,
-    aspectRatio: 200,
-    alignSelf: "center",
-    marginTop: 10,
+  heroCircle: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FFF6F7", // suave rosa
+    borderWidth: 1,
+    borderColor: "rgba(236,112,122,0.14)",
+    position: "relative",
   },
+  heroNumber: {
+    color: "#ec707a",
+    fontWeight: "900",
+    textAlign: "center",
+  },
+
+  levelBadge: {
+    position: "absolute",
+    right: -6,
+    bottom: -6,
+    backgroundColor: "#ec707a",
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#fff",
+    shadowColor: "#6b6f76",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  levelBadgeText: {
+    color: "#fff",
+    fontWeight: "800",
+    fontSize: 14,
+  },
+
+  speakerButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 52,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.04)",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  speakerEmoji: {
+    fontSize: 22,
+  },
+
   topBar: { width: "92%", alignItems: "center" },
   container: { alignItems: "center", paddingHorizontal: 16, paddingTop: 10 },
   wordsCard: {
@@ -526,12 +678,12 @@ const styles = StyleSheet.create({
     color: "#3f3f3f",
     marginTop: 6,
   },
-  modalSubtitle: {
-    fontSize: 15,
-    color: "#6b6f76",
-    marginTop: 8,
-    textAlign: "center",
-  },
+  // modalSubtitle: {
+  //   fontSize: 15,
+  //   color: "#6b6f76",
+  //   marginTop: 8,
+  //   textAlign: "center",
+  // },
   modalButton: {
     marginTop: 14,
     backgroundColor: "#EC707A",

@@ -146,7 +146,7 @@ export default function LevelsCacaPalavras({ navigation, route }) {
         </View>
 
         <View style={styles.rightBox}>
-          {!unlocked ? <Text style={styles.lockText}>🔒</Text> : completed ? <Text style={styles.okText}>✔ Concluído</Text> : <Text style={styles.playText}>▶ Jogar</Text>}
+          {!unlocked ? <Text style={styles.lockText}>🔒</Text> : completed ? <Text style={styles.okText}>✔</Text> : <Text style={styles.playText}>▶</Text>}
         </View>
       </TouchableOpacity>
     );
@@ -155,26 +155,29 @@ export default function LevelsCacaPalavras({ navigation, route }) {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <ImageBackground source={{ uri: TOP_IMAGE }} style={styles.topImage} imageStyle={{ opacity: 0.12 }}>
+        {/* <ImageBackground source={{ uri: TOP_IMAGE }} style={styles.topImage} imageStyle={{ opacity: 0.12 }}>
           <View style={styles.topBar}>
             <Image source={require("../assets/images/jogos/cacaPalavras/titulo.png")} style={styles.titleImage} resizeMode="contain" />
           </View>
-        </ImageBackground>
+        </ImageBackground> */}
 
         <View style={styles.container}>
           <View style={styles.wordsCard}>
-            <Text style={styles.cardHeader}>Níveis</Text>
+            {/* <Text style={styles.cardHeader}>Escolha um nível</Text> */}
 
             <View style={styles.board}>
-              <Text style={styles.boardTitle}>Escolha um nível</Text>
+              {/* <Text style={styles.boardTitle}> Escolha um nível</Text> */}
 
-              <FlatList data={levels} renderItem={renderItem} keyExtractor={(i) => i.toString()} scrollEnabled={false} />
+              <FlatList data={levels} renderItem={renderItem} keyExtractor={(i) => i.toString()} scrollEnabled={false} contentContainerStyle={{
+                paddingTop: 70,   // << ABAIXA SOMENTE OS QUADRADOS
+              }}
+              />
             </View>
 
             <View style={{ marginTop: 12, alignItems: "center" }}>
-              <TouchableOpacity style={styles.resetButton} onPress={resetProgressConfirm}>
+              {/* <TouchableOpacity style={styles.resetButton} onPress={resetProgressConfirm}>
                 <Text style={styles.resetText}>Resetar progresso (teste)</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
           </View>
         </View>
@@ -206,14 +209,14 @@ export default function LevelsCacaPalavras({ navigation, route }) {
 
 /* ---------- estilos ---------- */
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#e5ddc8" },
+  safe: { flex: 1, backgroundColor: "#add778" },
   scroll: { paddingBottom: 40 },
   topImage: {
     width: "100%",
     paddingVertical: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#cdebb0",
+    backgroundColor: "#add778",
   },
   titleImage: { height: 230, aspectRatio: 200, alignSelf: "center", marginTop: 20 },
   topBar: { width: "92%", alignItems: "center" },
@@ -221,7 +224,7 @@ const styles = StyleSheet.create({
   container: { alignItems: "center", paddingHorizontal: 16, paddingTop: 10 },
 
   wordsCard: {
-    width: "105%",
+    width: "100%",
     backgroundColor: "#fff7ee",
     borderRadius: 16,
     padding: 20,
@@ -232,9 +235,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
     marginTop: 60,
+    minHeight: 700,   // << AQUI O QUE VOCÊ QUER
   },
 
-  cardHeader: { fontSize: 16, color: "#6b6f76", fontWeight: "700", marginBottom: 8, textAlign: "center" },
+  cardHeader: { fontSize: 30, color: "#6b6f76", fontWeight: "700", marginBottom: 8, textAlign: "center" },
 
   boardTitle: { fontSize: 18, fontWeight: "800", color: "#9a5fcc", marginBottom: 12, textAlign: "center" },
 
@@ -295,4 +299,22 @@ const styles = StyleSheet.create({
   modalButton: { marginTop: 14, backgroundColor: "#EC707A", paddingVertical: 10, paddingHorizontal: 22, borderRadius: 14 },
 
   modalButtonText: { color: "#fff", fontWeight: "800", fontSize: 16 },
+
+  lockText: {
+    color: "#333",
+    fontSize: 20,
+  },
+
+  okText: {
+    color: "#add778",
+    fontSize: 20,
+    fontWeight: "700"
+  },
+
+  playText: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "700"
+  },
+
 });
