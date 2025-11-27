@@ -13,3 +13,31 @@ export const imagens = [
   { id: 4, src: require('../assets/images/pato.jpg'), nome: 'PATO' },
   { id: 5, src: require('../assets/images/mesa.jpg'), nome: 'MESA' },
 ];
+
+export const corretoIncorreto = [
+  {
+    imagem: require('../assets/images/maca.png'),
+    correta: "MAÇÃ",
+    exibida: "MACA"  // errado
+  },
+  {
+    imagem: require('../assets/images/cachorro.png'),
+    correta: "CACHORRO",
+    exibida: "CACHORO" // errado
+  },
+  {
+    imagem: require('../assets/images/banana.png'),
+    correta: "BANANA",
+    exibida: "BANANA" // certo
+  },
+  {
+    imagem: require('../assets/images/sol.png'),
+    correta: "SOL",
+    exibida: "SOUL" // errado
+  },
+  {
+    imagem: require('../assets/images/peixe.png'),
+    correta: "PEIXE",
+    exibida: "PEIXE" // certo
+  }
+];
