@@ -21,10 +21,10 @@ const TOP_IMAGE = "/mnt/data/aae93119-ceb0-44cd-a0b1-1cfeb2ee94e3.png";
 const CONGRATS_IMAGE = require("../assets/images/jogos/cacaPalavras/concluiu.png");
 
 // default inicial (pode ser sobrescrito via route.params.totalLevels)
-const DEFAULT_TOTAL_LEVELS = 3;
+const DEFAULT_TOTAL_LEVELS = 4;
 const initialUnlocked = 1;
 
-export default function LevelsCacaPalavras({ navigation, route }) {
+export default function LevelsDomino({ navigation, route }) {
   const { width } = useWindowDimensions();
   const { speak } = useTTS();
   const timerRef = useRef(null);
@@ -33,8 +33,8 @@ export default function LevelsCacaPalavras({ navigation, route }) {
   // gameRouteName: nome da rota para navegar ao abrir um nível (ex: 'JogoMemoria' ou 'CacaPalavras')
   // progressKey: chave do AsyncStorage (ex: 'caca_progress_global' ou 'memoria_progress_global')
   // totalLevels: número de níveis deste jogo
-  const GAME_ROUTE = route?.params?.gameRouteName || "CacaPalavras";
-  const PROGRESS_KEY = route?.params?.progressKey || "caca_progress_global";
+  const GAME_ROUTE = route?.params?.gameRouteName || "DominoScreen";
+  const PROGRESS_KEY = route?.params?.progressKey || "domino_progress_global";
   const TOTAL_LEVELS = Number(route?.params?.totalLevels) || DEFAULT_TOTAL_LEVELS;
 
   const [completedLevels, setCompletedLevels] = useState([]);
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
-    marginTop: 250,
+    marginTop: 200,
     minHeight: 200,   // << AQUI O QUE VOCÊ QUER
     overflow: "hidden", // corta partes das imagens que saiam do cartão (mude para "visible" se preferir)
   },

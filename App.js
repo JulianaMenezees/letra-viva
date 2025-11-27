@@ -17,7 +17,7 @@ import CacaPalavrasScreen from './screens/CacaPalavrasScreen';
 import JogoMemoriaScreen from './screens/JogoMemoriaScreen';
 import LevelsJogoMemoria from './screens/LevelsJogoMemoria';
 import DominoScreen from './screens/DominoScreen';
-import LevelsDominoScreen from './screens/LevelsDominoScreen';
+import LevelsDomino from './screens/LevelsDomino';
 import QuebraCabecaScreen from './screens/QuebraCabecaScreen';
 import LevelsQuebraCabeca from './screens/LevelsQuebraCabeca';
 import TabuleiroScreen from './screens/TabuleiroScreen';
@@ -82,7 +82,7 @@ export default function App() {
         <Stack.Screen name="LevelsJogoMemoria" component={LevelsJogoMemoria} />
         <Stack.Screen name="JogoMemoria" component={JogoMemoriaScreen} />
         <Stack.Screen name="DominoScreen" component={DominoScreen} />
-        <Stack.Screen name="LevelsDomino" component={LevelsDominoScreen} />
+        <Stack.Screen name="LevelsDomino" component={LevelsDomino} />
         <Stack.Screen name="QuebraCabeca" component={QuebraCabecaScreen} />
         <Stack.Screen name="LevelsQuebraCabeca" component={LevelsQuebraCabeca} />
         <Stack.Screen name="Tabuleiro" component={TabuleiroScreen} />

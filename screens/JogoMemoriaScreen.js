@@ -8,6 +8,8 @@ import {
   FlatList,
   Dimensions,
   Alert,
+  Modal,
+  Image
 } from 'react-native';
 import useTTS from '../utils/useTTS';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,6 +25,8 @@ function shuffle(array) {
 function repeatEmoji(emoji, times) {
   return Array(times).fill(emoji).join(' ');
 }
+
+const CONGRATS_IMAGE = require("../assets/images/jogos/cacaPalavras/check.png");
 
 export default function JogoMemoriaScreen({ navigation, route }) {
   const level = Math.max(1, Math.min(4, route?.params?.level || 1));
@@ -68,6 +72,20 @@ export default function JogoMemoriaScreen({ navigation, route }) {
   const [matchedIds, setMatchedIds] = useState(new Set());
   const [moves, setMoves] = useState(0);
   const [busy, setBusy] = useState(false);
+
+  const [showCongrats, setShowCongrats] = useState(false);
+
+  useEffect(() => {
+    if (showCongrats) {
+      const timer = setTimeout(() => {
+        setShowCongrats(false);
+        navigation.goBack();
+      }, 4000); //tempo de exibição
+
+      return () => clearTimeout(timer);
+    }
+  }, [showCongrats]);
+
 
   useEffect(() => {
     startNewGame();
@@ -146,13 +164,12 @@ export default function JogoMemoriaScreen({ navigation, route }) {
       const finish = async () => {
         speak?.('Parabéns! Você completou o nível.');
         await saveLevelComplete(level);
-        Alert.alert('Parabéns', `Você completou o nível ${level} em ${moves} jogadas.`, [
-          { text: 'Voltar aos níveis', onPress: () => navigation.goBack() },
-          { text: 'Jogar de novo', onPress: () => startNewGame() },
-        ]);
+
+        setShowCongrats(true);
       };
       setTimeout(finish, 300);
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchedIds, deck, moves]);
 
@@ -173,7 +190,7 @@ export default function JogoMemoriaScreen({ navigation, route }) {
         {isFlipped ? (
           <Text style={[styles.cardText, { fontSize: Math.max(18, Math.floor(CARD_SIZE / 4)) }]}>{item.face}</Text>
         ) : (
-          <Text style={[styles.backText, {  color: "#6b6f76", fontSize: Math.max(24, Math.floor(CARD_SIZE / 2.8)) }]}>◆</Text>
+          <Text style={[styles.backText, { color: "#6b6f76", fontSize: Math.max(24, Math.floor(CARD_SIZE / 2.8)) }]}>◆</Text>
         )}
       </TouchableOpacity>
     );
@@ -229,6 +246,20 @@ export default function JogoMemoriaScreen({ navigation, route }) {
         />
       </View>
 
+      <Modal
+        visible={showCongrats}
+        animationType="fade"
+        transparent
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Image source={CONGRATS_IMAGE} style={styles.congratsImage} />
+
+            <Text style={styles.modalTitle}>Parabéns</Text>
+            <Text style={styles.modalSubtitle}>Você concluiu!</Text>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -304,7 +335,7 @@ const styles = StyleSheet.create({
 
   grid: { alignItems: 'center', justifyContent: 'center' },
   card: { borderRadius: 12, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 6, elevation: 3 },
-  cardFaceDown: { backgroundColor: '#fee78d' },
+  cardFaceDown: { backgroundColor: '#FFF5B8' },
   cardFaceUp: { backgroundColor: '#fff' },
   cardText: {
     textAlign: 'center',
@@ -313,4 +344,62 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   backText: { textAlign: 'center' },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modalBox: {
+    width: "80%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    alignItems: "center",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+  },
+
+  congratsImage: {
+    width: 140,
+    height: 180,
+    resizeMode: "contain",
+    marginBottom: 10,
+  },
+
+  modalTitle: {
+    fontSize: 26,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 6,
+    textAlign: "center",
+  },
+
+  modalSubtitle: {
+    fontSize: 18,
+    color: "#666",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+
+  modalButton: {
+    backgroundColor: "#add778",
+    paddingVertical: 14,
+    paddingHorizontal: 30,
+    borderRadius: 12,
+  },
+
+  modalButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+
 });
+

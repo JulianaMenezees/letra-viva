@@ -323,27 +323,12 @@ export default function CacaPalavrasScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalCard}>
               <Image
-                source={require("../assets/images/jogos/cacaPalavras/concluiu.png")}
+                source={require("../assets/images/jogos/cacaPalavras/check.png")}
                 style={styles.modalImage}
                 resizeMode="contain"
               />
-              <Text style={styles.modalTitle}>Parabéns!</Text>
-              <Text style={styles.modalSubtitle}>Você encontrou todas as palavras</Text>
-
-              <TouchableOpacity
-                style={styles.modalButton}
-                activeOpacity={0.8}
-                onPress={() => {
-                  if (timerRef.current) {
-                    clearTimeout(timerRef.current);
-                    timerRef.current = null;
-                  }
-                  setShowCongrats(false);
-                  navigation.navigate("LevelsCacaPalavras");
-                }}
-              >
-                <Text style={styles.modalButtonText}>Continuar</Text>
-              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Parabéns</Text>
+              <Text style={styles.modalSubtitle}>Você concluiu!</Text>
             </View>
           </View>
         </Modal>
@@ -404,11 +389,11 @@ export default function CacaPalavrasScreen() {
               </View>
             </ScrollView>
 
-            <Text style={{ marginTop: 8, fontSize: 12, color: "#666" }}>Grid: {gridSize}×{gridSize}</Text>
+            {/* <Text style={{ marginTop: 8, fontSize: 12, color: "#666" }}>Grid: {gridSize}×{gridSize}</Text>
             {isOverflowing ? (
               <Text style={{ marginTop: 2, fontSize: 12, color: "#666" }}>Role horizontalmente para ver todo o grid</Text>
             ) : null}
-            <Text style={{ marginTop: 2, fontSize: 12, color: "#666" }}>Seleção: {currentSelection || "—"}</Text>
+            <Text style={{ marginTop: 2, fontSize: 12, color: "#666" }}>Seleção: {currentSelection || "—"}</Text> */}
           </View>
         </View>
       </ScrollView>
@@ -668,8 +653,8 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   modalImage: {
-    width: 260,
-    height: 260,
+    width: 140,
+    height: 140,
     marginBottom: 8,
   },
   modalTitle: {

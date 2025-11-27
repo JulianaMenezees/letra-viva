@@ -21,7 +21,7 @@ const TOP_IMAGE = "/mnt/data/aae93119-ceb0-44cd-a0b1-1cfeb2ee94e3.png";
 const CONGRATS_IMAGE = require("../assets/images/jogos/cacaPalavras/concluiu.png");
 
 // default inicial (pode ser sobrescrito via route.params.totalLevels)
-const DEFAULT_TOTAL_LEVELS = 4;
+const DEFAULT_TOTAL_LEVELS = 3;
 const initialUnlocked = 1;
 
 export default function LevelsJogoMemoria({ navigation, route }) {
@@ -146,36 +146,63 @@ export default function LevelsJogoMemoria({ navigation, route }) {
         </View>
 
         <View style={styles.rightBox}>
-          {!unlocked ? <Text style={styles.lockText}>🔒</Text> : completed ? <Text style={styles.okText}>✔ Concluído</Text> : <Text style={styles.playText}>▶ Jogar</Text>}
+          {!unlocked ? <Text style={styles.lockText}></Text> : completed ? <Text style={styles.okText}>✔</Text> : <Text style={styles.playText}>▶</Text>}
         </View>
       </TouchableOpacity>
     );
   }
 
+  const DECOR_TOP_RIGHT = require("../assets/images/jogos/niveis/estrelas.png");
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <ImageBackground source={{ uri: TOP_IMAGE }} style={styles.topImage} imageStyle={{ opacity: 0.12 }}>
-          <View style={styles.topBar}>
-            <Image source={require("../assets/images/jogos/cacaPalavras/titulo.png")} style={styles.titleImage} resizeMode="contain" />
-          </View>
-        </ImageBackground>
-
         <View style={styles.container}>
           <View style={styles.wordsCard}>
-            <Text style={styles.cardHeader}>Níveis</Text>
 
+            {/* ESTRELA AGORA NA ESQUERDA */}
+            <Image
+              source={DECOR_TOP_RIGHT}
+              style={[styles.decorCornerInside, styles.topLeftInside]}
+              pointerEvents="none"
+              resizeMode="contain"
+            />
+
+            {/* ÁUDIO AGORA NA DIREITA */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                speak?.("Toque em um nível para começar");
+              }}
+              style={styles.audioButtonRight}
+              accessibilityLabel="Botão de áudio"
+            >
+              <Text style={styles.audioIcon}>🔊</Text>
+            </TouchableOpacity>
+
+            {/* conteúdo real do cartão */}
             <View style={styles.board}>
-              <Text style={styles.boardTitle}>Escolha um nível</Text>
-
-              <FlatList data={levels} renderItem={renderItem} keyExtractor={(i) => i.toString()} scrollEnabled={false} />
+              <FlatList
+                data={levels}
+                renderItem={renderItem}
+                keyExtractor={(i) => i.toString()}
+                scrollEnabled={false}
+                contentContainerStyle={{
+                  paddingTop: 70,
+                }}
+              />
             </View>
 
-            <View style={{ marginTop: 12, alignItems: "center" }}>
-              {/* <TouchableOpacity style={styles.resetButton} onPress={resetProgressConfirm}>
-                <Text style={styles.resetText}>Resetar progresso (teste)</Text>
-              </TouchableOpacity> */}
+            <View style={{ marginTop: 20, alignItems: "center" }}>
+              <TouchableOpacity
+                style={styles.resetButton}
+                onPress={resetProgressConfirm}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.resetButtonText}>↻</Text>
+              </TouchableOpacity>
             </View>
+
           </View>
         </View>
       </ScrollView>
@@ -206,14 +233,14 @@ export default function LevelsJogoMemoria({ navigation, route }) {
 
 /* ---------- estilos ---------- */
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#e5ddc8" },
+  safe: { flex: 1, backgroundColor: "#add778" },
   scroll: { paddingBottom: 40 },
   topImage: {
     width: "100%",
     paddingVertical: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#cdebb0",
+    backgroundColor: "#add778",
   },
   titleImage: { height: 230, aspectRatio: 200, alignSelf: "center", marginTop: 20 },
   topBar: { width: "92%", alignItems: "center" },
@@ -221,7 +248,8 @@ const styles = StyleSheet.create({
   container: { alignItems: "center", paddingHorizontal: 16, paddingTop: 10 },
 
   wordsCard: {
-    width: "105%",
+    position: "relative",   // <- importante para imagens absolutas internas
+    width: "100%",
     backgroundColor: "#fff7ee",
     borderRadius: 16,
     padding: 20,
@@ -231,10 +259,12 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
-    marginTop: 60,
+    marginTop: 190,
+    minHeight: 200,   // << AQUI O QUE VOCÊ QUER
+    overflow: "hidden", // corta partes das imagens que saiam do cartão (mude para "visible" se preferir)
   },
 
-  cardHeader: { fontSize: 16, color: "#6b6f76", fontWeight: "700", marginBottom: 8, textAlign: "center" },
+  cardHeader: { fontSize: 30, color: "#6b6f76", fontWeight: "700", marginBottom: 8, textAlign: "center" },
 
   boardTitle: { fontSize: 18, fontWeight: "800", color: "#9a5fcc", marginBottom: 12, textAlign: "center" },
 
@@ -296,21 +326,82 @@ const styles = StyleSheet.create({
 
   modalButtonText: { color: "#fff", fontWeight: "800", fontSize: 16 },
 
+  /* decor internas */
+  decorCornerInside: {
+    position: "absolute",
+    width: 100,          // ajuste para caber bem dentro do cartão
+    height: 100,
+    opacity: 1,
+    zIndex: 2,
+  },
+
+  topLeftInside: {
+    top: 8,
+    left: 20,
+    transform: [{ rotate: "0deg" }],
+  },
+  topRightInside: {
+    top: 8,
+    right: 8,
+    transform: [{ rotate: "0deg" }],
+  },
+  bottomLeftInside: {
+    bottom: 8,
+    left: 8,
+    transform: [{ rotate: "-10deg" }],
+  },
+  bottomRightInside: {
+    bottom: 8,
+    right: 8,
+    transform: [{ rotate: "10deg" }],
+  },
+
   lockText: {
     color: "#333",
-    fontSize: 14,   
+    fontSize: 20,
   },
 
   okText: {
     color: "#add778",
-    fontSize: 17,  
+    fontSize: 20,
     fontWeight: "700"
   },
 
   playText: {
     color: "#fff",
-    fontSize: 17,   
+    fontSize: 20,
     fontWeight: "700"
   },
+
+  audioButtonRight: {
+    position: "absolute",
+    top: 8,
+    right: 8,      // <-- agora do lado direito
+    width: 70,
+    height: 100,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 6,
+  },
+
+  audioIcon: {
+    fontSize: 30,
+    textAlign: "center",
+  },
+  resetButton: {
+    backgroundColor: "#EC707A",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 10,
+  },
+
+  resetButtonText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+
 
 });
