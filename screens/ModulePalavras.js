@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Image } from 'react-native';
 import * as Speech from 'expo-speech';
 import LargeButton from '../components/LargeButton';
-import { palavras, imagens } from '../utils/data';
+
+import { palavras, imagens, corretoIncorreto } from '../utils/data';
 
 export default function ModulePalavras({ navigation }) {
   const [etapa, setEtapa] = useState('palavras');
@@ -15,72 +16,79 @@ export default function ModulePalavras({ navigation }) {
 
   const timeoutRef = useRef(null);
 
-  // Item atual
+  // ITEM ATUAL
   const atual =
     etapa === 'palavras'
       ? palavras[index]
       : etapa === 'imagens'
       ? imagens[index]
-      : palavras[index]; // ditado usa palavras
+      : etapa === 'ditado'
+      ? palavras[index]
+      : etapa === 'corretoIncorreto'
+      ? corretoIncorreto[index]
+      : palavras[index];
 
-  // total = 5 palavras + 5 imagens + 5 ditado = 15
-  const totalExercicios = 15;
+  // Total agora: 5 + 5 + 5 + 5 = 20
+  const totalExercicios = 20;
+
   const exercicioAtual =
     etapa === 'palavras'
       ? index + 1
       : etapa === 'imagens'
       ? index + 6
-      : index + 11;
+      : etapa === 'ditado'
+      ? index + 11
+      : index + 16;
 
-  // Palavra completa usada para imagens + ditado + mensagens
+  // palavra completa
   const palavraCompleta =
     etapa === 'palavras'
       ? atual.incompleta.replace('_', atual.correta).toUpperCase()
       : etapa === 'imagens'
       ? atual.nome.toUpperCase()
-      : atual.incompleta.replace('_', atual.correta).toUpperCase();
+      : etapa === 'ditado'
+      ? atual.incompleta.replace('_', atual.correta).toUpperCase()
+      : '';
 
-  // gera palavras similares para IMAGENS
   function gerarSimilares(correta) {
     correta = correta.toUpperCase();
     let base = imagens.map(i => i.nome.toUpperCase());
+    let semelhantes = base.filter(n => n !== correta && n.startsWith(correta[0]));
 
-    let similares = base.filter(n => n !== correta && n.startsWith(correta[0]));
-
-    if (similares.length < 3) {
+    if (semelhantes.length < 3) {
       const extras = base.filter(n => n !== correta);
-      similares = [...similares, ...extras];
+      semelhantes = [...semelhantes, ...extras];
     }
 
-    // garante que existam pelo menos 3 (pode repetir se necessário)
-    return Array.from(new Set(similares)).slice(0, 3);
+    return Array.from(new Set(semelhantes)).slice(0, 3);
   }
 
-  // função genérica
   function gerarOpcoes(correta, alternativas, qtd = 4) {
     let opcoes = [correta];
-
     while (opcoes.length < qtd) {
       const aleatoria =
         alternativas[Math.floor(Math.random() * alternativas.length)];
       if (!opcoes.includes(aleatoria)) opcoes.push(aleatoria);
     }
-
     return opcoes.sort(() => Math.random() - 0.5);
   }
 
-  // opções da etapa atual
+  // Opções
   const opcoes =
     etapa === 'palavras'
       ? gerarOpcoes(atual.correta.toUpperCase(), ['A', 'E', 'I', 'O', 'U'])
       : etapa === 'imagens'
       ? gerarOpcoes(palavraCompleta, gerarSimilares(atual.nome))
-      : gerarOpcoes(
+      : etapa === 'ditado'
+      ? gerarOpcoes(
           palavraCompleta,
           palavras.map(p => p.incompleta.replace('_', p.correta).toUpperCase())
-        );
+        )
+      : etapa === 'corretoIncorreto'
+      ? ['👍', '👎']
+      : [];
 
-  // efeitos: falar e resetar flags
+  // SPEAK
   useEffect(() => {
     setFeedback('');
     setRespondido(false);
@@ -89,9 +97,12 @@ export default function ModulePalavras({ navigation }) {
       Speech.speak(atual.fala, { language: 'pt-BR' });
     } else if (etapa === 'imagens') {
       Speech.speak('O que é isso?', { language: 'pt-BR' });
-    } else {
-      // ditado
+    } else if (etapa === 'ditado') {
       Speech.speak(atual.fala, { language: 'pt-BR' });
+    } else if (etapa === 'corretoIncorreto') {
+      Speech.speak('Essa palavra está escrita corretamente?', {
+        language: 'pt-BR',
+      });
     }
 
     return () => {
@@ -99,77 +110,126 @@ export default function ModulePalavras({ navigation }) {
     };
   }, [index, etapa]);
 
+  // VERIFICAÇÃO
   const verificar = (resp) => {
-  if (respondido) return;
-  setRespondido(true);
+    if (respondido) return;
+    setRespondido(true);
 
-  const respostaUsuario = (resp || '').toString().toUpperCase();
+    const respostaUsuario = (resp || '').toString().toUpperCase();
 
-  // 1️⃣ qual é a resposta correta
-  const esperado =
-    etapa === 'palavras'
-      ? atual.correta.toUpperCase()         // só a letra
-      : etapa === 'imagens'
-      ? atual.nome.toUpperCase()            // nome da imagem
-      : palavraCompleta.toUpperCase();      // ditado (palavra completa)
+    // -----------------------------------------------
+    // ETAPA CORRETO / INCORRETO
+    // -----------------------------------------------
+    if (etapa === "corretoIncorreto") {
+      const exibida = atual.exibida.toUpperCase();
+      const correta = atual.correta.toUpperCase();
+      const estaCorreta = exibida === correta;
 
-  const acertou = respostaUsuario === esperado;
+      const acertou =
+        (estaCorreta && respostaUsuario.includes("👍")) ||
+        (!estaCorreta && respostaUsuario.includes("👎"));
 
-  // 2️⃣ atualiza contadores corretamente
-  const newAcertos = acertou ? acertos + 1 : acertos;
-  const newErros = acertou ? erros : erros + 1;
+      const newAcertos = acertou ? acertos + 1 : acertos;
+      const newErros = acertou ? erros : erros + 1;
 
-  if (acertou) {
-    setAcertos(newAcertos);
-    setFeedback("✅ Acertou!");
-    Speech.speak("Parabéns, você acertou!", { language: "pt-BR" });
-  } else {
-    let corretaMensagem;
+      if (acertou) {
+        setAcertos(newAcertos);
+        setFeedback("✅ Acertou!");
+        Speech.speak("Parabéns, você acertou!", { language: "pt-BR" });
+      } else {
+        setErros(newErros);
+        Speech.speak(
+          estaCorreta
+            ? "A palavra estava escrita corretamente."
+            : "A palavra estava escrita incorretamente.",
+          { language: "pt-BR" }
+        );
+        setFeedback(
+          estaCorreta
+            ? "❌ A palavra estava correta!"
+            : "❌ A palavra estava errada!"
+        );
+      }
 
-    if (etapa === "palavras") {
-      corretaMensagem = `a letra ${atual.correta.toUpperCase()}`;
+      timeoutRef.current = setTimeout(() => {
+        if (index < 4) {
+          setIndex(i => i + 1);
+        } else {
+          navigation.replace("Resultado", {
+            acertos: newAcertos,
+            erros: newErros,
+            modulo: "Português",
+          });
+        }
+      }, acertou ? 1500 : 3000);
+
+      return;
+    }
+
+    // -----------------------------------------------
+    // PALAVRAS, IMAGENS e DITADO
+    // -----------------------------------------------
+    const esperado =
+      etapa === 'palavras'
+        ? atual.correta.toUpperCase()
+        : etapa === 'imagens'
+        ? atual.nome.toUpperCase()
+        : palavraCompleta.toUpperCase();
+
+    const acertou = respostaUsuario === esperado;
+
+    const newAcertos = acertou ? acertos + 1 : acertos;
+    const newErros = acertou ? erros : erros + 1;
+
+    if (acertou) {
+      setAcertos(newAcertos);
+      setFeedback("✅ Acertou!");
+      Speech.speak("Parabéns, você acertou!", { language: "pt-BR" });
     } else {
-      corretaMensagem = esperado; // palavra completa
+      let corretaMensagem =
+        etapa === "palavras"
+          ? `a letra ${atual.correta.toUpperCase()}`
+          : esperado;
+
+      setErros(newErros);
+      setFeedback(`❌ Errou! Era ${corretaMensagem}.`);
+      Speech.speak(`A resposta correta é ${corretaMensagem}`, {
+        language: "pt-BR",
+      });
     }
 
-    setErros(newErros);
-    setFeedback(`❌ Errou! Era ${corretaMensagem}.`);
-    Speech.speak(`A resposta correta é ${corretaMensagem}`, {
-      language: "pt-BR",
-    });
-  }
+    const delay = acertou ? 1500 : 3000;
 
-  // 3️⃣ atraso e troca de etapas
-  const delay = acertou ? 1500 : 3000;
+    timeoutRef.current = setTimeout(() => {
+      if (index < 4) {
+        setIndex(i => i + 1);
+        return;
+      }
 
-  timeoutRef.current = setTimeout(() => {
-    if (index < 4) {
-      setIndex((i) => i + 1);
-      return;
-    }
+      if (etapa === "palavras") {
+        setEtapa("imagens");
+        setIndex(0);
+        return;
+      }
 
-    if (etapa === "palavras") {
-      setEtapa("imagens");
-      setIndex(0);
-      return;
-    }
+      if (etapa === "imagens") {
+        setEtapa("ditado");
+        setIndex(0);
+        return;
+      }
 
-    if (etapa === "imagens") {
-      setEtapa("ditado");
-      setIndex(0);
-      return;
-    }
+      if (etapa === "ditado") {
+        setEtapa("corretoIncorreto");
+        setIndex(0);
+        return;
+      }
 
-    // final
-    navigation.replace("Resultado", {
-      acertos: newAcertos,
-      erros: newErros,
-      modulo: "Português",
-    });
-  }, delay);
-};
+    }, delay);
+  };
 
-
+  // -----------------------------------------------
+  // RENDERIZAÇÃO DO COMPONENTE
+  // -----------------------------------------------
   return (
     <View
       style={{
@@ -191,13 +251,13 @@ export default function ModulePalavras({ navigation }) {
       {/* PALAVRAS */}
       {etapa === 'palavras' && (
         <>
-          <Text style={{ fontSize: 36, color: '#4A90E2', marginVertical: 20 }}>
+          <Text style={{ fontSize: 36, color: '#9a5fcc', marginVertical: 20 }}>
             {atual.incompleta}
           </Text>
 
           <LargeButton
             title="🔊 Ouvir Palavra"
-            color="#FFB703"
+            color="#ec707a"
             onPress={() => Speech.speak(atual.fala, { language: 'pt-BR' })}
           />
         </>
@@ -219,7 +279,7 @@ export default function ModulePalavras({ navigation }) {
 
           <LargeButton
             title="🔊 Ouvir Pergunta"
-            color="#FFB703"
+            color="#ec707a"
             onPress={() => Speech.speak('O que é isso?', { language: 'pt-BR' })}
           />
         </>
@@ -234,48 +294,80 @@ export default function ModulePalavras({ navigation }) {
 
           <LargeButton
             title="🔊 Ouvir Palavra"
-            color="#FFB703"
+            color="#ec707a"
             onPress={() => Speech.speak(atual.fala, { language: 'pt-BR' })}
           />
         </>
       )}
 
-      {/* OPÇÕES (grid 2x2 centralizado) */}
+      {/* CORRETO OU INCORRETO */}
+      {etapa === 'corretoIncorreto' && (
+        <>
+          <Image
+            source={atual.imagem}
+            style={{
+              width: 220,
+              height: 180,
+              marginVertical: 20,
+              borderRadius: 12,
+            }}
+            resizeMode="contain"
+          />
+
+          <Text style={{ fontSize: 32, color: '#9a5fcc', marginBottom: 20 }}>
+            {atual.exibida}
+          </Text>
+
+          <LargeButton
+            title="🔊 Ouvir Pergunta"
+            color="#ec707a"
+            onPress={() =>
+              Speech.speak("Essa palavra está escrita corretamente?", {
+                language: "pt-BR",
+              })
+            }
+          />
+        </>
+      )}
+
+      {/* GRID DE OPÇÕES */}
+<View
+  style={{
+    marginTop: 20,
+    width: "100%",
+    alignItems: "center",
+  }}
+>
+  <View
+    style={{
+      width: "85%",
+      flexDirection: opcoes.length === 2 ? "column" : "row",
+      flexWrap: opcoes.length === 2 ? "nowrap" : "wrap",
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+    {opcoes.map((op, idx) => (
       <View
+        key={idx}
         style={{
-          marginTop: 20,
-          width: '100%',
-          alignItems: 'center',
+          width: opcoes.length === 2 ? "100%" : "48%",
+          marginVertical: opcoes.length === 2 ? 6 : "1%",
+          alignItems: "center",
         }}
       >
-        <View
-          style={{
-            width: '85%',
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-          }}
-        >
-          {opcoes.map((op, idx) => (
-            <View
-              key={idx}
-              style={{
-                width: '48%',
-                margin: '1%',
-                alignItems: 'center',
-              }}
-            >
-              <LargeButton
-                title={op}
-                color="#4A90E2"
-                onPress={() => verificar(op)}
-                disabled={respondido}
-                style={{ width: '100%' }}
-              />
-            </View>
-          ))}
-        </View>
+        <LargeButton
+          title={op}
+          color="#9a5fcc"
+          onPress={() => verificar(op)}
+          disabled={respondido}
+          style={{ width: "100%" }}
+        />
       </View>
+    ))}
+  </View>
+</View>
+
 
       {feedback !== '' && (
         <Text style={{ fontSize: 20, marginTop: 10 }}>{feedback}</Text>
@@ -283,7 +375,7 @@ export default function ModulePalavras({ navigation }) {
 
       <LargeButton
         title="⬅️ Voltar"
-        color="#999"
+        color="#4A88E0"
         onPress={() => navigation.goBack()}
       />
     </View>
