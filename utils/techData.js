@@ -1,125 +1,123 @@
 // utils/techData.js
-export const techActivities = [
-  { 
-    id: 1, 
-    palavra: 'EMAIL', 
-    fala: 'email', 
-    explicacao: 'Email é como uma carta digital que você envia pela internet. É gratuito e rápido. Use para falar com familiares e amigos.' 
+export const situacoesSeguranca = [
+  {
+    id: 1,
+    situacao: "Você recebe uma mensagem: 'Seu neto sofreu acidente, envie R$ 500 urgentemente para este número'. O que você faz?",
+    opcoes: [
+      "Envio o dinheiro rápido para ajudar",
+      "Ligo para meu neto no telefone que já tenho salvo",
+      "Pergunto mais detalhes por mensagem",
+      "Ignoro completamente"
+    ],
+    respostaCorreta: "Ligo para meu neto no telefone que já tenho salvo",
+    explicacao: "Excelente! Sempre confirme por telefone direto. Golpistas criam urgência para você não pensar."
   },
-  { 
-    id: 2, 
-    palavra: 'CELULAR', 
-    fala: 'celular', 
-    explicacao: 'Celular é seu aparelho de comunicação. Com ele você faz ligações, manda mensagens e tira fotos. É seu companheiro digital.' 
+  {
+    id: 2,
+    situacao: "Alguém liga dizendo ser do banco e pede o código que chegou no seu celular. O que você faz?",
+    opcoes: [
+      "Passo o código para resolver o problema",
+      "Desligo e não passo nada",
+      "Peço o nome e matrícula da pessoa",
+      "Dou meus dados pessoais para confirmar"
+    ],
+    respostaCorreta: "Desligo e não passo nada",
+    explicacao: "Perfeito! Bancos NUNCA pedem códigos pelo telefone. São golpistas tentando acessar suas contas."
   },
-  { 
-    id: 3, 
-    palavra: 'INTERNET', 
-    fala: 'internet', 
-    explicacao: 'Internet é uma rede que conecta o mundo todo. Com ela você vê notícias, conversa com netos e aprende coisas novas.' 
+  {
+    id: 3,
+    situacao: "Você recebe um link por WhatsApp: 'Clique aqui para ganhar um prêmio'. O que faz?",
+    opcoes: [
+      "Clique rápido para ver o prêmio",
+      "Encaminho para todos os contatos",
+      "Não clico e deleto a mensagem",
+      "Respondo pedindo mais informações"
+    ],
+    respostaCorreta: "Não clico e deleto a mensagem",
+    explicacao: "Muito bem! Links desconhecidos podem ter vírus ou golpes. Se parece bom demais, provavelmente é golpe."
   },
-  { 
-    id: 4, 
-    palavra: 'MENSAGEM', 
-    fala: 'mensagem', 
-    explicacao: 'Mensagem é um texto curto que você manda pelo celular. É rápido e prático para avisar que chegou bem ou mandar um oi.' 
+  {
+    id: 4,
+    situacao: "Um vídeo do seu filho pede dinheiro pelo WhatsApp, mas a voz parece estranha. O que você faz?",
+    opcoes: [
+      "Envio o dinheiro pelo Pix",
+      "Ligo para meu filho para confirmar",
+      "Pergunto por que ele precisa",
+      "Ignoro pensando que é brincadeira"
+    ],
+    respostaCorreta: "Ligo para meu filho para confirmar",
+    explicacao: "Ótimo! Deepfakes podem falsificar vídeos. Sempre confirme por telefone antes de transferir dinheiro."
   },
-  { 
-    id: 5, 
-    palavra: 'WHATSAPP', 
-    fala: 'whatsapp', 
-    explicacao: 'WhatsApp é um aplicativo gratuito para mandar mensagens, fotos e fazer ligações. Todos usam, é muito popular.' 
+  {
+    id: 5,
+    situacao: "No caixa eletrônico, um estranho oferece ajuda para digitar. O que você faz?",
+    opcoes: [
+      "Aceito a ajuda com gratidão",
+      "Peço para ele digitar minha senha",
+      "Recuso e chamo um funcionário do banco",
+      "Saio correndo assustado"
+    ],
+    respostaCorreta: "Recuso e chamo um funcionário do banco",
+    explicacao: "Excelente decisão! No caixa, apenas funcionários do banco podem ajudar. Sua segurança vem primeiro."
   },
-  { 
-    id: 6, 
-    palavra: 'SENHA', 
-    fala: 'senha', 
-    explicacao: 'Senha é seu segredo digital. Escolha uma que você lembre e não conte para ninguém. Protege suas informações.' 
+  {
+    id: 6,
+    situacao: "Você recebe um email do 'banco' pedindo para atualizar seus dados. O que faz?",
+    opcoes: [
+      "Clique no link e atualizo meus dados",
+      "Ligo para o banco usando o número oficial",
+      "Respondo o email com minhas informações",
+      "Ignoro completamente"
+    ],
+    respostaCorreta: "Ligo para o banco usando o número oficial",
+    explicacao: "Perfeito! Phishing usa emails falsos. Sempre use números oficiais para confirmar."
   },
-  { 
-    id: 7, 
-    palavra: 'CAMERA', 
-    fala: 'câmera', 
-    explicacao: 'Câmera tira fotos e grava vídeos. Use para registrar momentos especiais com família e compartilhar com amigos.' 
+  {
+    id: 7,
+    situacao: "Alguém na rua pede para usar seu celular para uma ligação urgente. O que você faz?",
+    opcoes: [
+      "Empresto meu celular",
+      "Faço a ligação por ele",
+      "Ofereço dinheiro para orelhão",
+      "Digo que não posso ajudar"
+    ],
+    respostaCorreta: "Digo que não posso ajudar",
+    explicacao: "Muito bem! Não empreste seu celular. A pessoa pode fugir com ele ou acessar suas informações."
   },
-  { 
-    id: 8, 
-    palavra: 'ARQUIVO', 
-    fala: 'arquivo', 
-    explicacao: 'Arquivo é qualquer documento guardado no celular: fotos, músicas, recibos. É sua pasta digital organizada.' 
+  {
+    id: 8,
+    situacao: "Um aplicativo desconhecido pede acesso a seus contatos e fotos. O que você faz?",
+    opcoes: [
+      "Permito tudo para usar o app",
+      "Permito só o necessário",
+      "Não permito e desinstalo",
+      "Pergunto para um familiar"
+    ],
+    respostaCorreta: "Não permito e desinstalo",
+    explicacao: "Excelente! Apps desconhecidos podem roubar seus dados. Só use apps confiáveis da loja oficial."
   },
-  { 
-    id: 9, 
-    palavra: 'WIFI', 
-    fala: 'wifi', 
-    explicacao: 'Wi-Fi é internet sem fio. Conecte em casa ou lugares públicos para usar internet sem gastar seu plano de dados.' 
-  },
-  { 
-    id: 10, 
-    palavra: 'APLICATIVO', 
-    fala: 'aplicativo', 
-    explicacao: 'Aplicativo é um programa do celular. Cada um tem uma função: mensagens, fotos, jogos. São ferramentas úteis.' 
-  },
-  { 
-    id: 11, 
-    palavra: 'FOTO', 
-    fala: 'foto', 
-    explicacao: 'Foto é uma imagem que você tira com a câmera. Guarde as melhores no álbum do celular para rever quando quiser.' 
-  },
-  { 
-    id: 12, 
-    palavra: 'VIDEO', 
-    fala: 'vídeo', 
-    explicacao: 'Vídeo grava momentos com som e movimento. Perfeito para registrar festas de família e conversas especiais.' 
-  },
-  { 
-    id: 13, 
-    palavra: 'MUSICA', 
-    fala: 'música', 
-    explicacao: 'Música no celular é como um rádio pessoal. Ouça suas canções favoritas a qualquer hora, em qualquer lugar.' 
-  },
-  { 
-    id: 14, 
-    palavra: 'CONTATO', 
-    fala: 'contato', 
-    explicacao: 'Contato é a lista de telefones guardada no celular. Sempre atualizada, você acha qualquer número rapidamente.' 
-  },
-  { 
-    id: 15, 
-    palavra: 'LIGACAO', 
-    fala: 'ligação', 
-    explicacao: 'Ligação é quando você fala com alguém pelo celular. É instantâneo e pessoal, perfeito para conversas importantes.' 
-  },
-  { 
-    id: 16, 
-    palavra: 'TELA', 
-    fala: 'tela', 
-    explicacao: 'Tela é a parte do celular que você toca. É sensível ao toque - basta um leve toque para funcionar.' 
-  },
-  { 
-    id: 17, 
-    palavra: 'BOTÃO', 
-    fala: 'botão', 
-    explicacao: 'Botão é o que você aperta no celular. Alguns ligam e desligam, outros aumentam o volume. São controles importantes.' 
-  },
-  { 
-    id: 18, 
-    palavra: 'BATERIA', 
-    fala: 'bateria', 
-    explicacao: 'Bateria é a energia do celular. Carregue todo dia para não faltar. Quando está vermelha, é hora de carregar.' 
-  },
-  { 
-    id: 19, 
-    palavra: 'CARREGADOR', 
-    fala: 'carregador', 
-    explicacao: 'Carregador é o fio que liga na tomada para dar energia ao celular. Use sempre o original para não estragar.' 
-  },
-  { 
-    id: 20, 
-    palavra: 'VOLUME', 
-    fala: 'volume', 
-    explicacao: 'Volume controla o som do celular. Aumente para ouvir melhor, diminua em lugares silenciosos. É muito prático.' 
+  {
+  id: 9,
+  situacao: "Seu celular ficou sem bateria enquanto você está na rua. O que você faz?",
+  opcoes: [
+    "Pede o celular de um desconhecido emprestado",
+    "Procura um lugar seguro para carregar",
+    "Tenta ligar mesmo sem bateria",
+    "Desiste de usar o celular hoje"
+  ],
+  respostaCorreta: "Procura um lugar seguro para carregar",
+  explicacao: "Perfeito! Quando o celular está sem bateria, o ideal é encontrar um local seguro, como uma loja ou estabelecimento, para carregar o aparelho."
+},
+  {
+    id: 10,
+    situacao: "Alguém se passa por técnico da operadora e pede acesso ao seu celular. O que faz?",
+    opcoes: [
+      "Permito o acesso para consertar",
+      "Peço identificação oficial",
+      "Ligo para a operadora para confirmar",
+      "Deixo a pessoa mexer no celular"
+    ],
+    respostaCorreta: "Ligo para a operadora para confirmar",
+    explicacao: "Muito bem! Técnicos legítimos marcam horário e se identificam. Sempre confirme com a empresa."
   }
 ];
-
-// Removemos techSituacoes já que não vamos usar mais

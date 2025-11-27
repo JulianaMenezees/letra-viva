@@ -1,48 +1,54 @@
 // screens/ModuleTecnology.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Modal, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, Modal, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import * as Speech from 'expo-speech';
 import LargeButton from '../components/LargeButton';
-import { techActivities } from '../utils/techData';
+import { situacoesSeguranca } from '../utils/techData';
 
 export default function ModuleTecnology({ navigation }) {
   const [index, setIndex] = useState(0);
-  const [resposta, setResposta] = useState("");
   const [showPopup, setShowPopup] = useState(false);
   const [mensagemErro, setMensagemErro] = useState("");
   const [acertos, setAcertos] = useState(0);
   const [erros, setErros] = useState(0);
   const [ultimoAcerto, setUltimoAcerto] = useState(false);
+  const [respondido, setRespondido] = useState(false);
 
-  const atual = techActivities[index];
-
-  const normalizar = (txt) => {
-    if (!txt) return '';
-    return String(txt)
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toUpperCase()
-      .trim();
-  };
+  const atual = situacoesSeguranca[index];
 
   useEffect(() => {
-    setResposta("");
     setMensagemErro("");
-    // REMOVIDA a fala automática aqui
+    setRespondido(false);
+    
+    // Fala a situação automaticamente
+    if (atual && atual.situacao) {
+      Speech.speak(atual.situacao, { 
+        language: "pt-BR", 
+        rate: 0.8 
+      });
+    }
   }, [index, atual]);
 
-  const falarPalavra = () => {
-    Speech.stop(); // Para qualquer fala anterior
-    if (atual && atual.fala) {
-      Speech.speak(atual.fala, { 
+  const falarSituacao = () => {
+    Speech.stop();
+    if (atual && atual.situacao) {
+      Speech.speak(atual.situacao, { 
         language: "pt-BR", 
         rate: 0.8 
       });
     }
   };
 
+  const falarOpcao = (opcao, numero) => {
+    Speech.stop();
+    Speech.speak(`Opção ${numero}: ${opcao}`, { 
+      language: "pt-BR", 
+      rate: 0.7 
+    });
+  };
+
   const falarExplicacao = () => {
-    Speech.stop(); // Para qualquer fala anterior
+    Speech.stop();
     if (atual && atual.explicacao) {
       Speech.speak(atual.explicacao, { 
         language: "pt-BR", 
@@ -51,52 +57,46 @@ export default function ModuleTecnology({ navigation }) {
     }
   };
 
-  const falarFeedback = (mensagem) => {
-    Speech.stop(); // Para qualquer fala anterior
-    Speech.speak(mensagem, { 
+  const verificar = (opcaoEscolhida) => {
+  if (respondido) return;
+
+  const acertou = opcaoEscolhida === atual.respostaCorreta;
+
+  setUltimoAcerto(acertou);
+
+  if (acertou) {
+    setAcertos(a => a + 1);
+    Speech.speak("Muito bem! Você se protegeu!", { 
       language: "pt-BR", 
       rate: 0.8 
     });
-  };
-
-  const verificar = () => {
-    if (!atual) return;
-
-    const respostaNormalizada = normalizar(resposta);
-    const palavraNormalizada = normalizar(atual.palavra);
-    const acertou = respostaNormalizada === palavraNormalizada;
-
-    setUltimoAcerto(acertou);
-
-    if (acertou) {
-      setAcertos(a => a + 1);
-      falarFeedback("Muito bem! Você acertou!");
-      setShowPopup(true);
-      
-      setTimeout(() => {
-        falarExplicacao();
-      }, 1500);
-    } else {
-      setErros(e => e + 1);
-      falarFeedback("Resposta incorreta!");
-      setMensagemErro("Resposta incorreta, tente novamente.");
-    }
-  };
+    setShowPopup(true);
+    setRespondido(true); // Só bloqueia quando acerta
+  } else {
+    setErros(e => e + 1); // Armazena o erro
+    Speech.speak("Essa não é a escolha mais segura. Tente outra opção.", { 
+      language: "pt-BR", 
+      rate: 0.8 
+    });
+    setMensagemErro("Tente novamente. Escolha outra opção.");
+    // NÃO chama setRespondido(true) - usuário pode tentar novamente
+  }
+};
 
   const proxima = () => {
-    Speech.stop(); // Para fala ao mudar de tela
+    Speech.stop();
     setShowPopup(false);
     setMensagemErro("");
 
-    if (index + 1 < techActivities.length) {
+    if (index + 1 < situacoesSeguranca.length) {
       setIndex(i => i + 1);
     } else {
-      const porcentagem = (acertos / techActivities.length) * 100;
+      const porcentagem = (acertos / situacoesSeguranca.length) * 100;
       
       navigation.replace("Resultado", {
         acertos,
         erros,
-        modulo: "Tecnologia",
+        modulo: "Segurança Digital",
         aprovado: porcentagem >= 75,
         porcentagem: Math.round(porcentagem)
       });
@@ -106,7 +106,7 @@ export default function ModuleTecnology({ navigation }) {
   if (!atual) {
     return (
       <View style={styles.container}>
-        <Text style={styles.titulo}>Módulo: Tecnologia</Text>
+        <Text style={styles.titulo}>Módulo: Segurança Digital</Text>
         <Text style={styles.subtitulo}>Carregando...</Text>
         <LargeButton 
           title="Voltar ao Início" 
@@ -118,174 +118,288 @@ export default function ModuleTecnology({ navigation }) {
   }
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.flex}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+  <View style={styles.container}>
+    {/* Seta voltar - FIXA NO CANTO */}
+    <TouchableOpacity 
+      style={styles.botaoVoltarSeta}
+      onPress={() => {
+        Speech.stop();
+        navigation.goBack();
+      }}
     >
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* SETA VOLTAR */}
-        <TouchableOpacity 
-          style={styles.botaoVoltarSeta}
-          onPress={() => {
-            Speech.stop(); // Para fala ao voltar
-            navigation.goBack();
-          }}
-        >
-          <Text style={styles.botaoVoltarTextoSeta}>←</Text>
-        </TouchableOpacity>
+      <Text style={styles.botaoVoltarTextoSeta}>←</Text>
+    </TouchableOpacity>
 
-        <Text style={styles.titulo}>Módulo: Tecnologia</Text>
-
+    {/* CONTEÚDO CENTRALIZADO */}
+    <View style={styles.conteudoCentral}>
+      
+      {/* Cabeçalho */}
+      <View style={styles.cabecalho}>
+        <Text style={styles.titulo}>Módulo: Segurança Digital</Text>
         <Text style={styles.contador}>
-          Exercício {index + 1} de {techActivities.length}
+          Situação {index + 1} de {situacoesSeguranca.length}
         </Text>
+      </View>
 
-        {/* PALAVRA PARA O USUÁRIO ESCREVER */}
-        <Text style={styles.palavra}>{atual.palavra}</Text>
+      {/* Situação */}
+      <View style={styles.situacaoContainer}>
+        <Text style={styles.situacaoTexto}>{atual.situacao}</Text>
+      </View>
 
-        {/* BOTÃO OUVIR - AGORA CONTROLADO MANUALMENTE */}
-        <LargeButton
-          title="🔊 Ouvir Palavra"
-          color="#ec707a"
-          onPress={falarPalavra}
-        />
+      {/* Controles de voz */}
+      <View style={styles.controlesContainer}>
+        <TouchableOpacity 
+          style={[styles.bolinhaControle, {backgroundColor: '#ADD778'}]}
+          onPress={falarSituacao}
+        >
+          <Text style={styles.bolinhaTexto}>🔊</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.bolinhaControle, {backgroundColor: '#EC707A'}]}
+          onPress={() => Speech.stop()}
+        >
+          <Text style={styles.bolinhaTexto}>🔇</Text>
+        </TouchableOpacity>
+      </View>
 
-        {/* INPUT PARA DIGITAR */}
-        <TextInput
-          value={resposta}
-          onChangeText={setResposta}
-          placeholder="Digite a palavra igual"
-          autoCapitalize="characters"
-          style={styles.input}
-        />
+      {/* Instrução */}
+      <Text style={styles.instrucaoOpcoes}>
+        Segure cada opção para ouvi-la. Toque para escolher.
+      </Text>
 
-        {/* BOTÃO VERIFICAR */}
-        <LargeButton 
-          title="Verificar" 
-          color="#9a5fcc"
-          onPress={verificar} 
-          disabled={!resposta.trim()} 
-        />
+      {/* Opções */}
+      <View style={styles.opcoesContainer}>
+        {atual.opcoes.map((opcao, i) => (
+          <TouchableOpacity
+            key={i}
+            style={[
+              styles.botaoOpcao,
+              respondido && opcao === atual.respostaCorreta && styles.botaoOpcaoCorreta,
+              respondido && opcao !== atual.respostaCorreta && styles.botaoOpcaoErrada
+            ]}
+            onPress={() => verificar(opcao)}
+            onLongPress={() => falarOpcao(opcao, i + 1)}
+            disabled={respondido}
+          >
+            <Text style={styles.textoOpcao}>
+              <Text style={{fontWeight: 'bold'}}>{i + 1}.</Text>
+              {` ${opcao}`}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
-        {mensagemErro ? <Text style={styles.textoErro}>{mensagemErro}</Text> : null}
+      {/* Feedback */}
+      {mensagemErro ? <Text style={styles.textoErro}>{mensagemErro}</Text> : null}
+    </View>
 
-        {/* POPUP DE EXPLICAÇÃO */}
-        <Modal visible={showPopup} transparent animationType="fade">
-          <View style={styles.popupFundo}>
-            <View style={styles.popup}>
-              <Text style={styles.popupTitulo}>
-                {ultimoAcerto ? "✅ Acertou!" : "❌ Errou"}
-              </Text>
-              <Text style={styles.popupTexto}>{atual.explicacao}</Text>
-              
-              <LargeButton 
-                title="🔊 Ouvir Explicação" 
-                color="#4A88E0"
-                onPress={falarExplicacao} 
-              />
-              
-              <LargeButton 
-                title="Continuar ➜" 
-                color="#9a5fcc"
-                onPress={proxima} 
-              />
-            </View>
-          </View>
-        </Modal>
-      </ScrollView>
-    </KeyboardAvoidingView>
-  );
+    {/* Popup */}
+    <Modal visible={showPopup} transparent animationType="fade">
+      <View style={styles.popupFundo}>
+        <View style={styles.popup}>
+          <Text style={styles.popupTitulo}>
+            {ultimoAcerto ? "✅ Excelente Escolha!" : "💡 Aprenda Mais"}
+          </Text>
+          <Text style={styles.popupTexto}>{atual.explicacao}</Text>
+          
+          <LargeButton 
+            title="🔊 Ouvir Explicação" 
+            color="#4A88E0"
+            onPress={falarExplicacao} 
+          />
+          
+          <LargeButton 
+            title="Próxima Situação ➜" 
+            color="#9a5fcc"
+            onPress={proxima} 
+          />
+        </View>
+      </View>
+    </Modal>
+  </View>
+);
 }
 
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
   container: {
-    flexGrow: 1,
-    padding: 20,
-    alignItems: "center",
+    flex: 1,
     backgroundColor: "#FFFDF7",
+  },
+  conteudoCentral: {
+    flex: 1,
+    alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  cabecalho: {
+    alignItems: 'center',
+    marginBottom: 20,
   },
   titulo: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: "bold",
-    marginBottom: 10,
     textAlign: "center",
     color: "#2C3E50",
+    marginBottom: 5,
   },
   contador: {
-    fontSize: 20,
-    marginBottom: 30,
+    fontSize: 16,
     textAlign: "center",
     color: "#7F8C8D",
   },
-  palavra: {
-    fontSize: 36,
-    color: "#9a5fcc",
-    fontWeight: "bold",
-    marginBottom: 30,
-    textAlign: "center",
-  },
-  input: {
-    borderWidth: 2,
-    borderColor: "#9a5fcc",
-    borderRadius: 10,
-    width: "80%",
+  situacaoContainer: {
+    backgroundColor: '#ffffff',
     padding: 15,
-    fontSize: 20,
-    textAlign: "center",
-    backgroundColor: "#fff",
-    marginVertical: 20,
-    color: "#2C3E50",
+    borderRadius: 12,
+    width: '100%',
+    maxWidth: 400,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+    marginBottom: 15,
   },
+  situacaoTexto: {
+    fontSize: 16,
+    color: '#2C3E50',
+    textAlign: 'center',
+    lineHeight: 22,
+    fontWeight: '500',
+  },
+  controlesContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  bolinhaControle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  bolinhaTexto: {
+    fontSize: 18,
+    color: 'white',
+  },
+  instrucaoOpcoes: {
+    fontSize: 14,
+    color: '#7F8C8D',
+    textAlign: 'center',
+    marginBottom: 10,
+    fontStyle: 'italic',
+  },
+  opcoesContainer: {
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+  },
+  botaoOpcao: {
+    backgroundColor: '#9a5fcc',
+    padding: 12,
+    marginVertical: 4,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#9a5fcc',
+    width: '100%',
+    minHeight: 50,
+    justifyContent: 'center',
+  },
+  textoOpcao: {
+  fontSize: 14,
+  textAlign: 'center',
+  color: '#FFFFFF',
+  lineHeight: 18,
+  fontWeight: '500',
+},
+numeroOpcao: {
+  fontWeight: 'bold',
+  color: '#FFFFFF',
+},
   textoErro: {
     color: "#E74C3C",
-    fontSize: 16,
+    fontSize: 15,
+    textAlign: "center",
     marginTop: 10,
-    textAlign: "center",
-  },
-  popupFundo: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  popup: {
-    backgroundColor: "white",
-    width: "85%",
-    borderRadius: 15,
-    padding: 20,
-    alignItems: "center",
-  },
-  popupTitulo: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  popupTexto: {
-    fontSize: 18,
-    marginVertical: 15,
-    textAlign: "center",
-    lineHeight: 24,
+    fontWeight: '500',
   },
   botaoVoltarSeta: {
     position: 'absolute',
-    top: 40,
-    left: 20,
-    padding: 10,
+    top: 15,
+    left: 15,
+    padding: 8,
+    zIndex: 1,
   },
   botaoVoltarTextoSeta: {
     color: '#4A88E0',
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
   },
-  subtitulo: {
-    fontSize: 18,
-    textAlign: "center",
-    color: "#666",
-    marginBottom: 30,
+  
+  popupFundo: {
+  flex: 1,
+  backgroundColor: "rgba(0,0,0,0.5)",
+  justifyContent: "center",
+  alignItems: "center",
+  padding: 20,
+},
+popup: {
+  backgroundColor: "white",
+  width: "100%",
+  maxWidth: 400,
+  borderRadius: 15,
+  padding: 25,
+  alignItems: "center",
+  shadowColor: "#000",
+  shadowOffset: {
+    width: 0,
+    height: 4,
   },
+  shadowOpacity: 0.3,
+  shadowRadius: 5,
+  elevation: 8,
+},
+popupTitulo: {
+  fontSize: 22,
+  fontWeight: "bold",
+  marginBottom: 15,
+  textAlign: "center",
+  color: "#2C3E50",
+},
+popupTexto: {
+  fontSize: 16,
+  marginVertical: 15,
+  textAlign: "center",
+  lineHeight: 22,
+  color: "#5D6D7E",
+},
+// Estilos que estavam faltando:
+numeroOpcao: {
+  fontWeight: 'bold',
+  color: '#9a5fcc',
+},
+botaoOpcaoCorreta: {
+  backgroundColor: '#d4edda',
+  borderColor: '#ADD778',
+},
+botaoOpcaoErrada: {
+  backgroundColor: '#f8d7da',
+  borderColor: '#EC707A',
+},
+subtitulo: {
+  fontSize: 18,
+  textAlign: "center",
+  color: "#666",
+  marginBottom: 30,
+},
 });
