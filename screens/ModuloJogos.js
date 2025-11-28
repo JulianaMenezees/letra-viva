@@ -47,8 +47,8 @@ export default function ModuloJogos({ navigation }) {
       />
 
       <GameButton
-        title="4. Quebra Cabeça"
-        icon={require("../assets/images/jogos/cacaPalavras/home_quebra.png")}
+        title="4. Continhas"
+        icon={require("../assets/images/jogos/cacaPalavras/home_continhas.png")}
         onPress={() => navigation.navigate("LevelsQuebraCabeca")}
       />
 

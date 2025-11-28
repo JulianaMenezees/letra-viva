@@ -1,8 +1,9 @@
 // src/screens/PinSetupScreen.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, Switch, Alert, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Switch, Alert, Platform, ScrollView } from 'react-native';
 import { savePin, setBiometry, canUseBiometry, authWithBiometrics, isBiometryEnabled } from '../services/authService';
 import useTTS from '../utils/useTTS';
+import * as Speech from 'expo-speech';
 
 export default function PinSetupScreen({ navigation }) {
   const [pin, setPin] = useState('');
@@ -17,7 +18,6 @@ export default function PinSetupScreen({ navigation }) {
       try {
         const ok = await canUseBiometry();
         setBiometryAvailable(ok);
-        // se já estiver ativada no storage, carregar valor real
         const enabled = await isBiometryEnabled();
         setBiometryState(enabled && ok);
       } catch (e) {
@@ -27,43 +27,35 @@ export default function PinSetupScreen({ navigation }) {
       }
     })();
 
-    // fala instrução
-    setTimeout(() => speak('Agora vamos configurar um PIN de seis dígitos. Digite o mesmo PIN nos dois quadradinhos abaixo. Você também pode ativar a biometria, caso o seu celular permita.'), 300);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setTimeout(() => speak(
+      'Agora vamos configurar um PIN de seis dígitos. Digite o mesmo PIN nos dois quadradinhos abaixo. Você também pode ativar a biometria, caso o seu celular permita.'
+    ), 300);
   }, []);
 
   const validatePin = (p) => /^\d{6}$/.test(p);
 
-  const canSave = () => validatePin(pin) && pin === confirm && !saving;
-
-  // Ao trocar o switch (tentar ativar/desativar)
   const handleToggleBiometry = async (value) => {
-    // se tentar ativar, confirme com biometria imediatamente
     if (value) {
       if (!biometryAvailable) {
         Alert.alert('Biometria indisponível', 'Seu celular não suporta ou não tem biometria cadastrada.');
         return;
       }
-
-      speak('Para ativar biometria, confirme com sua impressão digital, aproximando seu dedo no sensor de bometria do seu celular ou rosto no próximo passo.');
+      speak('Para ativar biometria, confirme com sua impressão digital ou rosto.');
       const ok = await authWithBiometrics('Confirme para ativar biometria');
       if (ok) {
         setBiometryState(true);
-        // não salvamos aqui no secure store — vamos salvar no handleSave junto com o PIN
         speak('Biometria ativada localmente. Salve para persistir a configuração.');
         Alert.alert('OK', 'Biometria confirmada. Salve para finalizar.');
       } else {
-        Alert.alert('Falha', 'Biometria não confirmada. Não foi ativada.');
         setBiometryState(false);
+        Alert.alert('Falha', 'Biometria não confirmada.');
       }
     } else {
-      // desativando: só atualiza o estado local (salvo no handleSave)
       setBiometryState(false);
       speak('Biometria desativada localmente. Salve para confirmar.');
     }
   };
 
-  // Botão para testar autenticação biométrica agora (sem salvar)
   const handleTestBiometry = async () => {
     if (!biometryAvailable) {
       Alert.alert('Indisponível', 'Biometria não está disponível neste dispositivo.');
@@ -93,7 +85,6 @@ export default function PinSetupScreen({ navigation }) {
     try {
       setSaving(true);
       await savePin(pin);
-      // persiste escolha da biometria (true/false)
       await setBiometry(!!biometry);
       speak('PIN salvo com sucesso. Você será levado para a tela de login.');
       setTimeout(() => navigation.replace('Login'), 600);
@@ -106,17 +97,76 @@ export default function PinSetupScreen({ navigation }) {
   };
 
   return (
-    <View style={{ flex:1, padding:20, justifyContent:'center' }}>
-      <Text style={{ fontSize:18, marginBottom:8 }}>Crie um PIN (6 dígitos)</Text>
+    <ScrollView
+      contentContainerStyle={{
+        flexGrow: 1,
+        justifyContent: 'center',
+        padding: 24,
+        paddingTop: 60,
+        backgroundColor: '#fff',
+      }}
+    >
+      {/* Título + botões de áudio */}
+      <View style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 16
+      }}>
+        <Text style={{
+          fontSize: 26,
+          fontWeight: '700',
+          color: '#6b6f76',
+          textShadowColor: 'rgba(0,0,0,0.15)',
+          textShadowOffset: { width: 0, height: 2 },
+          textShadowRadius: 3,
+          flex: 1,
+        }}>
+          Crie seu PIN
+        </Text>
 
+        <View style={{ flexDirection: 'row' }}>
+          <TouchableOpacity onPress={() => speak('Vamos configurar o PIN')} style={{ marginHorizontal: 6 }}>
+            <Text style={{ fontSize: 28 }}>🔊</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => Speech.stop()} style={{ marginHorizontal: 6 }}>
+            <Text style={{ fontSize: 28 }}>🔇</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <Text style={{
+        fontSize: 14,
+        color: '#555',
+        marginBottom: 20,
+        textAlign: 'center'
+      }}>
+        Digite o mesmo PIN nos dois campos abaixo. Você também pode ativar a biometria.
+      </Text>
+
+      {/* Inputs PIN */}
       <TextInput
         value={pin}
-        onChangeText={(t) => setPin(t.replace(/[^0-9]/g, ''))} // só números
+        onChangeText={(t) => setPin(t.replace(/[^0-9]/g, ''))}
         keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
         maxLength={6}
         placeholder="******"
         secureTextEntry
-        style={{ borderWidth:1, padding:8, marginBottom:8 }}
+        style={{
+          borderWidth: 0,
+          backgroundColor: '#fff',
+          borderRadius: 16,
+          paddingVertical: 16,
+          paddingHorizontal: 12,
+          fontSize: 20,
+          marginBottom: 12,
+          textAlign: 'center',
+          shadowColor: '#000',
+          shadowOpacity: 0.05,
+          shadowOffset: { width: 0, height: 3 },
+          shadowRadius: 6,
+          elevation: 3,
+        }}
       />
 
       <TextInput
@@ -126,28 +176,83 @@ export default function PinSetupScreen({ navigation }) {
         maxLength={6}
         placeholder="Confirme o PIN"
         secureTextEntry
-        style={{ borderWidth:1, padding:8, marginBottom:12 }}
+        style={{
+          borderWidth: 0,
+          backgroundColor: '#fff',
+          borderRadius: 16,
+          paddingVertical: 16,
+          paddingHorizontal: 12,
+          fontSize: 20,
+          marginBottom: 20,
+          textAlign: 'center',
+          shadowColor: '#000',
+          shadowOpacity: 0.05,
+          shadowOffset: { width: 0, height: 3 },
+          shadowRadius: 6,
+          elevation: 3,
+        }}
       />
 
-      <View style={{ flexDirection:'row', alignItems:'center', marginBottom:12 }}>
-        <Text style={{ flex:1 }}>
-          Ativar biometria {biometryAvailable ? '' : '(indisponível)'}
+      {/* Cartão de Biometria */}
+      <View style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 14,
+        borderRadius: 14,
+        marginBottom: 12,
+        backgroundColor: 'rgba(254, 231, 141, 0.7)', // 0.7 = 70% opaco
+      }}>
+        <Text style={{ fontSize: 16, fontWeight: '500', color: '#333' }}>
+          1. Ativar biometria {biometryAvailable ? '' : '(indisponível)'}
         </Text>
-
-        {/* o controle é desabilitado se o aparelho não suporta biometria */}
-        <Switch
-          value={biometry}
-          onValueChange={handleToggleBiometry}
-          disabled={!biometryAvailable}
-        />
+        <Switch value={biometry} onValueChange={handleToggleBiometry} disabled={!biometryAvailable} />
       </View>
 
-      {/* Botão de testar biometria (útil para debug e para o usuário checar antes de salvar) */}
-      <View style={{ marginBottom: 12 }}>
-        <Button title="Testar biometria" onPress={handleTestBiometry} disabled={!biometryAvailable} />
-      </View>
 
-      <Button title={saving ? 'Salvando...' : 'Salvar PIN e prosseguir'} onPress={handleSave} disabled={!validatePin(pin) || pin !== confirm || saving} />
-    </View>
+      {/* Botão Testar Biometria */}
+      <TouchableOpacity
+        onPress={handleTestBiometry}
+        disabled={!biometryAvailable}
+        style={{
+          backgroundColor: '#add778',
+          paddingVertical: 14,
+          borderRadius: 12,
+          alignItems: 'center',
+          marginBottom: 20,
+          opacity: !biometryAvailable ? 0.5 : 1,
+          shadowColor: '#000',
+          shadowOpacity: 0.05,
+          shadowOffset: { width: 0, height: 3 },
+          shadowRadius: 5,
+          elevation: 2,
+        }}
+      >
+        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>2. Testar biometria</Text>
+      </TouchableOpacity>
+
+      {/* Botão Salvar */}
+      <TouchableOpacity
+        onPress={handleSave}
+        disabled={!validatePin(pin) || pin !== confirm || saving}
+        style={{
+          backgroundColor: '#9B64CC',
+          paddingVertical: 18,
+          borderRadius: 20,
+          alignItems: 'center',
+          marginBottom: 12,
+          shadowColor: '#000',
+          shadowOpacity: 0.1,
+          shadowOffset: { width: 0, height: 4 },
+          shadowRadius: 6,
+          elevation: 3,
+          opacity: (!validatePin(pin) || pin !== confirm || saving) ? 0.5 : 1,
+        }}
+      >
+        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
+          {saving ? 'Salvando...' : '3. Salvar PIN e prosseguir'}
+        </Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }

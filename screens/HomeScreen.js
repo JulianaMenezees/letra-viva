@@ -1,13 +1,14 @@
 // screens/HomeScreen.js
 import React, { useCallback, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  Alert, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  Alert,
+  TouchableOpacity,
   Modal,
   ScrollView,
-  StyleSheet 
+  StyleSheet,
+  Image
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import LargeButton from '../components/LargeButton';
@@ -21,7 +22,7 @@ export default function HomeScreen({ navigation }) {
   useFocusEffect(
     useCallback(() => {
       speak('Bem-vinda(o) ao Letra Viva. Escolha um módulo para começar.');
-      return () => {};
+      return () => { };
     }, [])
   );
 
@@ -58,7 +59,7 @@ export default function HomeScreen({ navigation }) {
       {/* CABEÇALHO */}
       <View style={styles.header}>
         <Text style={styles.titulo}>Letra Viva</Text>
-        
+
         {/* ÍCONE HAMBÚRGUER */}
         <TouchableOpacity style={styles.menuButton} onPress={toggleMenu}>
           <View style={styles.menuLine} />
@@ -69,79 +70,173 @@ export default function HomeScreen({ navigation }) {
 
       {/* MÓDULOS PRINCIPAIS - 2 LINHAS DE 2 QUADRADOS */}
       <View style={styles.modulosContainer}>
-        
+
         {/* PRIMEIRA LINHA */}
         <View style={styles.linhaModulos}>
           {/* MÓDULO 1 - PORTUGUÊS */}
-          <TouchableOpacity 
+          {/* <TouchableOpacity 
             style={[styles.moduloQuadrado, { backgroundColor: '#ADD778' }]}
             onPress={() => navigation.navigate('ModuloPalavras')}
           >
             <Text style={styles.moduloEmoji}>🧩</Text>
             <Text style={styles.moduloTitulo}>Português</Text>
+          </TouchableOpacity> */}
+
+          <TouchableOpacity
+            style={[styles.moduloQuadrado, { backgroundColor: '#ADD778' }]}
+            onPress={() => navigation.navigate('ModuloPalavras')}
+          >
+            <Image
+              source={require('../assets/images/home/home_portugues.png')}
+              style={{ width: 90, height: 90, marginBottom: 8 }}
+              resizeMode="contain"
+            />
+            <Text style={[styles.moduloTitulo, { color: '#fff', fontSize: 20 }]}>Português</Text>
           </TouchableOpacity>
 
           {/* MÓDULO 2 - MATEMÁTICA */}
-          <TouchableOpacity 
+          {/* <TouchableOpacity
             style={[styles.moduloQuadrado, { backgroundColor: '#EC707A' }]}
             onPress={() => navigation.navigate('ModuleMatematica')}
           >
             <Text style={styles.moduloEmoji}>🧮</Text>
             <Text style={styles.moduloTitulo}>Matemática</Text>
+          </TouchableOpacity> */}
+
+          <TouchableOpacity
+            style={[styles.moduloQuadrado, { backgroundColor: '#EC707A' }]}
+            onPress={() => navigation.navigate('ModuleMatematica')}
+          >
+            <Image
+              source={require('../assets/images/home/home_mate.png')}
+              style={{ width: 90, height: 90, marginBottom: 8 }}
+              resizeMode="contain"
+            />
+            <Text style={[styles.moduloTitulo, { color: '#fff', fontSize: 20 }]}>Matemática</Text>
           </TouchableOpacity>
+
         </View>
 
         {/* SEGUNDA LINHA */}
         <View style={styles.linhaModulos}>
           {/* MÓDULO 3 - TECNOLOGIA */}
-          <TouchableOpacity 
+          {/* <TouchableOpacity
             style={[styles.moduloQuadrado, { backgroundColor: '#9A5FCC' }]}
             onPress={() => navigation.navigate('ModuleTecnology')}
           >
             <Text style={styles.moduloEmoji}>📱</Text>
             <Text style={styles.moduloTitulo}>Tecnologia</Text>
+          </TouchableOpacity> */}
+
+          <TouchableOpacity
+            style={[styles.moduloQuadrado, { backgroundColor: '#9A5FCC' }]}
+            onPress={() => navigation.navigate('ModuleTecnology')}
+          >
+            <Image
+              source={require('../assets/images/home/home__tech.png')}
+              style={{ width: 90, height: 90, marginBottom: 8 }}
+              resizeMode="contain"
+            />
+            <Text style={[styles.moduloTitulo, { color: '#fff', fontSize: 20 }]}>Tecnologia</Text>
           </TouchableOpacity>
 
           {/* MÓDULO 4 - JOGOS */}
-          <TouchableOpacity 
+          {/* <TouchableOpacity
             style={[styles.moduloQuadrado, { backgroundColor: '#FEE78D' }]}
             onPress={() => navigation.navigate('ModuloJogos')}
           >
             <Text style={styles.moduloEmoji}>🎮</Text>
             <Text style={styles.moduloTitulo}>Jogos</Text>
+          </TouchableOpacity> */}
+
+          <TouchableOpacity
+            style={[styles.moduloQuadrado, { backgroundColor: '#FEE78D' }]}
+            onPress={() => navigation.navigate('ModuloJogos')}
+          >
+            <Image
+              source={require('../assets/images/home/home_jogo.png')}
+              style={{ width: 100, height: 100, marginBottom: 8 }}
+              resizeMode="contain"
+            />
+            <Text style={[styles.moduloTitulo, { color: '#fff', fontSize: 20 }]}>Jogos</Text>
           </TouchableOpacity>
+
         </View>
       </View>
 
       {/* MODAL DO MENU DE SEGURANÇA */}
-      {/* MODAL DO MENU DE SEGURANÇA */}
-<Modal
-  visible={menuVisible}
-  transparent
-  animationType="slide"
-  onRequestClose={toggleMenu}
->
-  <View style={styles.modalOverlay}>
-    <View style={styles.menuContainer}>
-      <Text style={styles.menuTitulo}>Menu de Segurança</Text>
-      
-      <View style={styles.menuContent}>
-       <LargeButton
-          title="🔒 Sair da Conta"
-          color="#FF6B6B"
-          onPress={() => {
-            setMenuVisible(false);
-            handleLogout();
-          }}
-        />
-      </View>
+      <Modal
+        visible={menuVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={toggleMenu}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.menuContainer}>
+            <Text style={styles.menuTitulo}>Menu de Segurança</Text>
 
-      <TouchableOpacity style={styles.fecharMenu} onPress={toggleMenu}>
-        <Text style={styles.fecharTexto}>Fechar Menu</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-</Modal>
+            <ScrollView style={styles.menuScroll}>
+              <LargeButton
+                title="👤 Perfil"
+                color="#8AC6D1"
+                onPress={() => {
+                  setMenuVisible(false);
+                  navigation.navigate('Perfil');
+                }}
+              />
+
+              <LargeButton
+                title="⚙️ Configurações"
+                color="#9a5fcc"
+                onPress={() => {
+                  setMenuVisible(false);
+                  navigation.navigate('Configuracoes');
+                }}
+              />
+
+              <LargeButton
+                title="🔒 Alterar PIN"
+                color="#ec707a"
+                onPress={() => {
+                  setMenuVisible(false);
+                  navigation.navigate('AlterarPIN');
+                }}
+              />
+
+              <LargeButton
+                title="📊 Estatísticas"
+                color="#4CAF50"
+                onPress={() => {
+                  setMenuVisible(false);
+                  navigation.navigate('Estatisticas');
+                }}
+              />
+
+              <LargeButton
+                title="❓ Ajuda"
+                color="#FFB703"
+                onPress={() => {
+                  setMenuVisible(false);
+                  navigation.navigate('Ajuda');
+                }}
+              />
+
+              <LargeButton
+                title="🔒 Sair da Conta"
+                color="#FF6B6B"
+                onPress={() => {
+                  setMenuVisible(false);
+                  handleLogout();
+                }}
+              />
+            </ScrollView>
+
+            <TouchableOpacity style={styles.fecharMenu} onPress={toggleMenu}>
+              <Text style={styles.fecharTexto}>Fechar Menu</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -175,16 +270,16 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   modulosContainer: {
-  flex: 1,
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-linhaModulos: {
-  flexDirection: 'row',
-  justifyContent: 'center',
-  alignItems: 'center',
-  marginBottom: 30, // Aumentei o espaçamento entre linhas
-},
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  linhaModulos: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 30, // Aumentei o espaçamento entre linhas
+  },
   moduloQuadrado: {
     width: 150,
     height: 150,
@@ -251,8 +346,4 @@ linhaModulos: {
     fontSize: 16,
     fontWeight: 'bold',
   },
-  menuContent: {
-  alignItems: 'center',
-  justifyContent: 'center',
-},
 });

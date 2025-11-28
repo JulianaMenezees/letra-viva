@@ -1,3 +1,4 @@
+// QuebraCabecaNiveis.js
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
@@ -6,36 +7,80 @@ import {
   StyleSheet,
   Animated,
   Image,
-  Modal,
   Dimensions,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+  Modal,
 } from 'react-native';
 import useTTS from '../utils/useTTS';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// habilita LayoutAnimation no Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 // título (arquivo que você enviou)
 const TITLE_IMAGE = '/mnt/data/A_2D_digital_graphic_features_the_word_"Dominó"_sp.png';
 
+// imagem de parabéns (declare uma vez, no topo)
+const CONGRATS_IMAGE = require("../assets/images/jogos/cacaPalavras/check.png");
+
 // Helpers
-function repeatEmoji(e, times) {
-  return Array(times).fill(e).join(' ');
-}
 function randInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-function makeChoices(correct, count = 4) {
-  const choices = new Set([correct]);
-  const spread = Math.max(2, Math.floor(Math.abs(correct) * 0.4) + 1);
-  while (choices.size < count) {
-    const delta = (Math.random() < 0.6
-      ? (Math.random() < 0.5 ? -1 : 1) * randInt(1, spread)
-      : randInt(1, Math.max(2, spread)));
-    const cand = Math.max(0, correct + delta);
-    choices.add(cand);
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-  return Array.from(choices).sort(() => Math.random() - 0.5);
+  return arr;
+}
+
+// chunk helper
+function chunkArray(arr, size) {
+  const res = [];
+  for (let i = 0; i < arr.length; i += size) {
+    res.push(arr.slice(i, i + size));
+  }
+  return res;
 }
 
 /**
- * CONFIG: 6 níveis (3 primeiros = frutas, 3 últimos = números)
+ * makeChoices revisada:
+ * garante presença do correto e variedade ao redor.
+ */
+function makeChoices(correct, count = 4) {
+  const spread = Math.max(2, Math.floor(Math.abs(correct) * 0.4) + 1);
+  const minCandidate = Math.max(0, correct - spread * 2);
+  const maxCandidate = correct + spread * 2;
+
+  const pool = [];
+  for (let n = minCandidate; n <= maxCandidate; n++) pool.push(n);
+  if (!pool.includes(correct)) pool.push(correct);
+  shuffleArray(pool);
+
+  const picks = new Set([correct]);
+  let idx = 0;
+  while (picks.size < count && idx < pool.length) {
+    picks.add(pool[idx]);
+    idx++;
+  }
+
+  let fallbackAttempts = 0;
+  while (picks.size < count && fallbackAttempts < 200) {
+    const cand = Math.max(0, correct + randInt(-Math.max(1, spread * 2), Math.max(1, spread * 2)));
+    picks.add(cand);
+    fallbackAttempts++;
+  }
+
+  return shuffleArray(Array.from(picks));
+}
+
+/**
+ * CONFIG: 6 níveis
  */
 const LEVELS = {
   1: { mode: 'fruit-fruit', min: 1, max: 3, fruit: '🍇' },
@@ -50,7 +95,6 @@ const ROUNDS_PER_LEVEL = 5;
 export default function QuebraCabecaNiveis({ route, navigation }) {
   const { speak } = useTTS ? useTTS() : { speak: () => { } };
 
-  // recebe level pela rota (se não vier, usa 1)
   const initialLevel = Number(route?.params?.level) || 1;
   const maxLevel = Object.keys(LEVELS).length;
   const [level, setLevel] = useState(Math.max(1, Math.min(maxLevel, initialLevel)));
@@ -60,46 +104,94 @@ export default function QuebraCabecaNiveis({ route, navigation }) {
   const [rounds, setRounds] = useState([]);
   const [score, setScore] = useState(0);
 
-  // peças e seleção (tap-to-place) - ainda mantemos, mas em alguns níveis faremos auto-place
-  const [placedLeft, setPlacedLeft] = useState(null);
+  // sempre auto-place: armazenamos apenas count (número)
+  const [placedLeft, setPlacedLeft] = useState(null); // { count: number }
   const [placedRight, setPlacedRight] = useState(null);
-  const [selectedPiece, setSelectedPiece] = useState(null); // 'A'|'B'|null
 
   // escolhas / feedback
   const [choices, setChoices] = useState([]);
   const [showChoices, setShowChoices] = useState(false);
   const [feedback, setFeedback] = useState(null); // 'correct'|'wrong'|null
+  const [selectedChoiceValue, setSelectedChoiceValue] = useState(null);
 
   // animação resultado
   const animScale = useRef(new Animated.Value(0.7)).current;
   const animOpacity = useRef(new Animated.Value(0)).current;
 
-  // modal final do nível
-  const [modalVisible, setModalVisible] = useState(false);
+  // modal simples de parabéns
+  const [showCongrats, setShowCongrats] = useState(false);
 
-  // Gera rounds (pares a,b) baseado no nível
+  // resultados por rodada
+  const [roundResults, setRoundResults] = useState([]); // array de { a,b,op,result,chosen,isCorrect }
+
+  // chave usada para salvar progresso global dos módulos/níveis
+  const PROGRESS_KEY = 'quebra_cabeca_progress_global';
+
+  async function saveLevelComplete(lvl) {
+    try {
+      const raw = await AsyncStorage.getItem(PROGRESS_KEY);
+      let data;
+      try { data = raw ? JSON.parse(raw) : { completed: [] }; } catch (e) { data = { completed: [] }; }
+
+      const completedRaw = Array.isArray(data.completed) ? data.completed : [];
+      const completedNums = completedRaw.map((v) => Number(v)).filter((n) => Number.isFinite(n));
+
+      if (!completedNums.includes(lvl)) {
+        const newCompleted = [...completedNums, lvl]
+          .filter((v, i, a) => a.indexOf(v) === i) // unique
+          .sort((a, b) => a - b);
+
+        await AsyncStorage.setItem(PROGRESS_KEY, JSON.stringify({ completed: newCompleted }));
+        console.log('[saveLevelComplete] salvo', PROGRESS_KEY, newCompleted);
+      }
+    } catch (err) {
+      console.error('[saveLevelComplete] erro ao salvar progresso', err);
+    }
+  }
+
   function genRoundsForLevel(lv) {
     const conf = LEVELS[lv];
     const arr = [];
-    for (let i = 0; i < ROUNDS_PER_LEVEL; i++) {
+    const usedResults = new Set();
+    let attempts = 0;
+    const maxAttempts = 1000;
+
+    while (arr.length < ROUNDS_PER_LEVEL && attempts < maxAttempts) {
+      attempts++;
+      let a = randInt(conf.min, conf.max);
+      let b = randInt(conf.min, conf.max);
+
+      let operator = '+';
+      if (lv >= 4) operator = Math.random() < 0.4 ? '-' : '+';
+
+      if (operator === '-' && a < b) [a, b] = [b, a];
+
+      const result = operator === '+' ? a + b : Math.max(0, a - b);
+
+      if (usedResults.has(result)) continue;
+
+      usedResults.add(result);
+      arr.push({ a, b, operator, id: `${lv}-${arr.length}-${a}-${b}-${operator}` });
+    }
+
+    while (arr.length < ROUNDS_PER_LEVEL) {
       const a = randInt(conf.min, conf.max);
       const b = randInt(conf.min, conf.max);
-      // operator: for the last two levels we mix + and - randomly
-      let operator = '+';
-      if (lv >= 5) operator = Math.random() < 0.5 ? '+' : '-';
-      // For subtraction ensure result non-negative by ordering when operator is '-' (we'll compute result later)
-      arr.push({ a, b, operator, id: `${lv}-${i}-${a}-${b}-${operator}` });
+      const operator = '+';
+      arr.push({ a, b, operator, id: `${lv}-fallback-${arr.length}-${a}-${b}-${operator}` });
     }
+
     return arr;
   }
 
   function clearRoundState() {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setPlacedLeft(null);
     setPlacedRight(null);
-    setSelectedPiece(null);
     setChoices([]);
     setShowChoices(false);
     setFeedback(null);
+    setSelectedChoiceValue(null);
     animScale.setValue(0.7);
     animOpacity.setValue(0);
   }
@@ -109,8 +201,9 @@ export default function QuebraCabecaNiveis({ route, navigation }) {
     setRounds(r);
     setRoundIndex(0);
     setScore(0);
+    setRoundResults([]);
     clearRoundState();
-    setModalVisible(false);
+    setShowCongrats(false);
     speak?.(`Nível ${lv}. Vamos começar.`);
   }
 
@@ -126,75 +219,91 @@ export default function QuebraCabecaNiveis({ route, navigation }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roundIndex]);
 
+  // efeito que fecha o modal de parabéns e faz speak + volta
+  useEffect(() => {
+    if (showCongrats) {
+      speak?.('Parabéns! Você concluiu o nível.');
+
+      const timer = setTimeout(() => {
+        setShowCongrats(false);
+        navigation.goBack();
+      }, 4000); // 4s
+
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showCongrats]);
+
   const currentRound = rounds[roundIndex] || null;
 
-  // formata face (fruit ou number)
-  function renderFace(value, type) {
+  /**
+   * renderFace agora retorna um objeto:
+   *  { text: string (pode conter \n), fontSize: number }
+   *
+   * Para 'fruit' quebra em linhas (CHUNK_SIZE por linha) e calcula fontSize baseado na quantidade.
+   * Para 'number' retorna o número como texto e fontSize padrão.
+   */
+  function renderFaceValue(value, type) {
     if (type === 'fruit') {
       const fruit = cfg.fruit || '🍎';
-      return repeatEmoji(fruit, value);
+      const count = Math.max(0, Number(value) || 0);
+
+      // decide quantas frutas por linha (experimente 2,3,4)
+      const CHUNK_SIZE = 3;
+      const emojis = Array.from({ length: count }).map(() => fruit);
+      const lines = chunkArray(emojis, CHUNK_SIZE).map(lineArr => lineArr.join(' '));
+      const text = lines.length > 0 ? lines.join('\n') : '';
+
+      // fontSize dinâmico (ajuste conservador)
+      // base pequena para 0..1, sobe com mais itens
+      const fontSize = Math.max(14, Math.min(44, 18 + Math.floor(count * 1.6)));
+
+      return { text, fontSize };
     }
-    if (type === 'number') return String(value);
-    return String(value);
+
+    // number
+    return { text: String(value), fontSize: 34 };
   }
 
-  // piece type por nível (aqui os 3 primeiros são fruta, últimos números)
   function pieceTypeFor() {
     return cfg.mode === 'fruit-fruit' ? 'fruit' : 'number';
   }
 
-  // determinar se este nível usa auto-place (mostrar operandos direto, sem arrastar)
-  const autoPlaceThisLevel = useMemo(() => {
-    // user asked: primeiros dois níveis mostrar fruta direto; últimos dois níveis também mostrar (mas com +/- misturado)
-    if (level <= 2) return true;
-    if (level >= 5) return true;
-    return false;
-  }, [level]);
+  // Sempre true: todos os níveis são "olhar a resposta"
+  const autoPlaceThisLevel = true;
 
   // preparar alternativas depois de ambos os slots preenchidos (ou auto-placed)
   function prepareChoicesAndShow() {
     if (!currentRound) return;
     if (!placedLeft || !placedRight) return;
 
-    // compute numeric result depending on operator
     const a = Number(placedLeft.count);
     const b = Number(placedRight.count);
     const op = currentRound.operator || '+';
     const result = op === '+' ? a + b : Math.max(0, a - b);
 
     const numericChoices = makeChoices(result, 4);
-    // choices are numeric for the user's request
     const visualChoices = numericChoices.map((n) => ({ value: n, face: String(n) }));
     setChoices(visualChoices);
     setShowChoices(true);
   }
 
-  // When currentRound changes and level requests auto-place, set placedLeft/right automatically
+  // auto-place sempre (todos os níveis) — agora colocamos só counts
   useEffect(() => {
     if (!currentRound) return;
 
-    // auto-place logic for levels that need it
-    if (autoPlaceThisLevel) {
-      // For subtraction ensure we present the operands in visual order so result non-negative
-      const op = currentRound.operator || '+';
-      let A = currentRound.a;
-      let B = currentRound.b;
-      if (op === '-' && A < B) {
-        // swap so left >= right for visual clarity
-        [A, B] = [B, A];
-      }
+    const op = currentRound.operator || '+';
+    let A = currentRound.a;
+    let B = currentRound.b;
+    if (op === '-' && A < B) [A, B] = [B, A];
 
-      const leftObj = pieceTypeFor() === 'fruit' ? { face: renderFace(A, 'fruit'), count: A } : { face: String(A), count: A };
-      const rightObj = pieceTypeFor() === 'fruit' ? { face: renderFace(B, 'fruit'), count: B } : { face: String(B), count: B };
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setPlacedLeft({ count: A });
+    setPlacedRight({ count: B });
 
-      setPlacedLeft(leftObj);
-      setPlacedRight(rightObj);
-
-      // prepare choices immediately
-      setTimeout(() => {
-        prepareChoicesAndShow();
-      }, 220);
-    }
+    setTimeout(() => {
+      prepareChoicesAndShow();
+    }, 200);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentRound]);
 
@@ -204,13 +313,23 @@ export default function QuebraCabecaNiveis({ route, navigation }) {
   }, [placedLeft, placedRight]);
 
   function onChooseAlternative(choiceValue) {
-    // compute correct value
+    if (feedback !== null) return;
+
     const a = Number(placedLeft.count);
     const b = Number(placedRight.count);
     const op = currentRound.operator || '+';
-    const correct = op === '+' ? a + b : Math.max(0, a - b);
+    const result = op === '+' ? a + b : Math.max(0, a - b);
 
-    const isCorrect = Number(choiceValue) === correct;
+    const chosenNum = Number(choiceValue);
+    const isCorrect = chosenNum === result;
+
+    // registra resultado da rodada
+    setRoundResults(prev => [...prev, {
+      id: currentRound?.id || `${level}-${roundIndex}`,
+      a, b, op, result, chosen: chosenNum, isCorrect
+    }]);
+
+    setSelectedChoiceValue(chosenNum);
     setFeedback(isCorrect ? 'correct' : 'wrong');
     speak?.(isCorrect ? 'Acertou' : 'Errou');
     if (isCorrect) setScore((s) => s + 1);
@@ -223,47 +342,23 @@ export default function QuebraCabecaNiveis({ route, navigation }) {
       ]),
     ]).start();
 
+    const FEEDBACK_DURATION = isCorrect ? 1600 : 2000;
     setTimeout(() => {
       const next = roundIndex + 1;
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+
       if (next >= ROUNDS_PER_LEVEL) {
-        setModalVisible(true);
+        // salva progresso (não precisa aguardar)
+        saveLevelComplete(level).catch(() => { /* já logamos erros internamente */ });
+
+        // fim do nível: mostramos o modal simples (useEffect vai falar e voltar)
+        setShowCongrats(true);
       } else {
         setRoundIndex(next);
         clearRoundState();
       }
-    }, 900);
-  }
 
-  // colocar peça no slot (tap-to-place). Peças A/B representam os operandos do round
-  function placeSelectedPieceOn(slot) {
-    if (!selectedPiece) {
-      speak?.('Selecione primeiro uma peça.');
-      return;
-    }
-    if (!currentRound) return;
-    const Acount = currentRound.a;
-    const Bcount = currentRound.b;
-
-    function makeObjFor(piece) {
-      const cnt = piece === 'A' ? Acount : Bcount;
-      if (pieceTypeFor() === 'fruit') return { face: renderFace(cnt, 'fruit'), count: cnt };
-      return { face: String(cnt), count: cnt };
-    }
-
-    if (slot === 'left') {
-      if (placedLeft) {
-        speak?.('Slot da esquerda já ocupado.');
-        return;
-      }
-      setPlacedLeft(makeObjFor(selectedPiece));
-    } else {
-      if (placedRight) {
-        speak?.('Slot da direita já ocupado.');
-        return;
-      }
-      setPlacedRight(makeObjFor(selectedPiece));
-    }
-    setSelectedPiece(null);
+    }, FEEDBACK_DURATION);
   }
 
   function onNextLevel() {
@@ -275,12 +370,10 @@ export default function QuebraCabecaNiveis({ route, navigation }) {
     startLevel(level);
   }
 
-  // sizing
   const screen = Dimensions.get('window');
   const SLOT_W = Math.min(160, Math.floor(screen.width * 0.36));
   const SLOT_H = 110;
 
-  // render das escolhas
   function renderChoicesPanel() {
     if (!showChoices || choices.length === 0) return null;
     const op = currentRound?.operator || '+';
@@ -289,18 +382,57 @@ export default function QuebraCabecaNiveis({ route, navigation }) {
     return (
       <View style={styles.choicesWrapper}>
         {choices.map((c, idx) => {
-          const isCorrect = Number(c.value) === correctVal;
+          const isCorrectChoice = Number(c.value) === correctVal;
+          const chosenByUser = selectedChoiceValue !== null && Number(c.value) === Number(selectedChoiceValue);
+
+          const btnStyles = [styles.choiceBtn];
+          if (feedback !== null) {
+            if (feedback === 'correct' && chosenByUser && isCorrectChoice) {
+              btnStyles.push(styles.choiceCorrect);
+            } else if (feedback === 'wrong') {
+              if (chosenByUser && !isCorrectChoice) {
+                btnStyles.push(styles.choiceWrong);
+              }
+              if (isCorrectChoice) {
+                btnStyles.push(styles.choiceCorrect);
+              }
+            }
+          }
+
+          // Decide cor do texto explicitamente
+          let textColor = '#2b2f36'; // sua cor neutra
+          if (feedback !== null) {
+            if (isCorrectChoice) {
+              // alternativa correta — manter destaque mas texto ainda pode ser neutro ou escuro
+              textColor = '#2b2f36';
+            }
+            if (chosenByUser && !isCorrectChoice) {
+              // usuário escolheu errado -> deixar o texto contrastado também
+              textColor = '#2b2f36';
+            }
+          }
+
+          // Caso queira que texto branco apareça sobre fundos escuros, substitua textColor quando necessário:
+          // if (btnStyles.includes(styles.choiceCorrect)) textColor = '#2b2f36';
+          // if (btnStyles.includes(styles.choiceWrong)) textColor = '#2b2f36';
+
           return (
             <TouchableOpacity
               key={idx}
-              style={[
-                styles.choiceBtn,
-                feedback === 'correct' && isCorrect ? styles.choiceCorrect : null,
-                feedback === 'wrong' && !isCorrect ? styles.choiceWrong : null,
-              ]}
+              style={btnStyles}
               onPress={() => onChooseAlternative(c.value)}
+              disabled={feedback !== null}
+              activeOpacity={0.8}
             >
-              <Text style={styles.choiceText}>{c.face}</Text>
+              <Text
+                style={[
+                  styles.choiceText,
+                  { color: textColor } // força a cor sempre aqui
+                ]}
+                allowFontScaling={false}
+              >
+                {c.face}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -308,9 +440,25 @@ export default function QuebraCabecaNiveis({ route, navigation }) {
     );
   }
 
+
+  function getSlotHeight(count) {
+    if (!count || count <= 0) return 110;
+
+    // cada linha tem CHUNK_SIZE frutas
+    const CHUNK_SIZE = 3;
+    const lines = Math.ceil(count / CHUNK_SIZE);
+
+    // 40px por linha + padding
+    return Math.max(110, 40 * lines + 20);
+  }
+
+  const leftH = getSlotHeight(placedLeft?.count);
+  const rightH = getSlotHeight(placedRight?.count);
+  const SLOT_DYNAMIC_H = Math.max(leftH, rightH);
+
   return (
     <View style={styles.outer}>
-      {/* header (estrelas + nível + som) */}
+      {/* header */}
       <View style={styles.headerContainer}>
         <View style={styles.headerCard}>
           <View style={styles.starsRow}>
@@ -337,7 +485,7 @@ export default function QuebraCabecaNiveis({ route, navigation }) {
               onPress={() => speak(`Nível ${level}`)}
               style={styles.heroButton}
             >
-              <View style={[styles.heroCircle, { width: 110, height: 110, borderRadius: 60, transform: [{ translateX: -60 }] }]}>
+              <View style={[styles.heroCircle, { width: 110, height: 110, borderRadius: 60, transform: [{ translateX: -75 }] }]}>
                 <Text style={[styles.heroNumber, { fontSize: 38 }]}>{level}</Text>
               </View>
             </TouchableOpacity>
@@ -353,74 +501,76 @@ export default function QuebraCabecaNiveis({ route, navigation }) {
         </View>
       </View>
 
-      {/* main card area (onde ficará todo o jogo) */}
+      {/* main */}
       <View style={styles.cardsWrapper}>
-        <View style={styles.progressRowSmall}>
-          <Text style={styles.progressText}>Rodada {roundIndex + 1} / {ROUNDS_PER_LEVEL}</Text>
-        </View>
+        <View style={styles.progressRowSmall} />
 
-        <View style={styles.slotsRow}
-        >
-          <View style={[styles.slot, { width: SLOT_W, height: SLOT_H }, placedLeft ? styles.slotFilled : null]}>
-            <Text style={styles.slotLabel}>{placedLeft ? placedLeft.face : (autoPlaceThisLevel ? '-' : 'Toque aqui')}</Text>
+        <View style={styles.slotsRow}>
+          <View style={[styles.slot, { width: SLOT_W, height: SLOT_DYNAMIC_H }, placedRight && styles.slotFilled]}>
+            {placedLeft ? (
+              (() => {
+                const face = pieceTypeFor() === 'fruit' ? renderFaceValue(placedLeft.count, 'fruit') : renderFaceValue(placedLeft.count, 'number');
+                return (
+                  <Text style={[styles.slotLabel, { fontSize: face.fontSize }]} allowFontScaling numberOfLines={3}>
+                    {face.text}
+                  </Text>
+                );
+              })()
+            ) : (
+              <Text style={styles.slotLabel}>-</Text>
+            )}
           </View>
 
-          <View style={styles.operatorBox}>
+          <View style={[styles.operatorBox, { height: SLOT_DYNAMIC_H }]}>
             <Text style={styles.operator}>{currentRound?.operator || '+'}</Text>
-            <Text style={[styles.operator, { marginLeft: 12 }]}>=</Text>
+            <Text style={[styles.operator, styles.equals]}>=</Text>
           </View>
 
-          <View style={[styles.slot, { width: SLOT_W, height: SLOT_H }, placedRight ? styles.slotFilled : null]}>
-            <Text style={styles.slotLabel}>{placedRight ? placedRight.face : (autoPlaceThisLevel ? '-' : 'Toque aqui')}</Text>
+          <View style={[styles.slot, { width: SLOT_W, minHeight: SLOT_H }, placedRight ? styles.slotFilled : null]}>
+            {placedRight ? (
+              (() => {
+                const face = pieceTypeFor() === 'fruit' ? renderFaceValue(placedRight.count, 'fruit') : renderFaceValue(placedRight.count, 'number');
+                return (
+                  <Text style={[styles.slotLabel, { fontSize: face.fontSize }]} allowFontScaling numberOfLines={3}>
+                    {face.text}
+                  </Text>
+                );
+              })()
+            ) : (
+              <Text style={styles.slotLabel}>-</Text>
+            )}
           </View>
         </View>
 
         <Animated.View style={[styles.resultArea, { transform: [{ scale: animScale }], opacity: animOpacity }]}>
-          <Text style={styles.resultBig}>
-            {placedLeft && placedRight ? (currentRound?.operator === '-' ? String(Math.max(0, (placedLeft.count || 0) - (placedRight.count || 0))) : (cfg.mode === 'fruit-fruit' ? renderFace((placedLeft.count || 0) + (placedRight.count || 0), 'fruit') : String((placedLeft.count || 0) + (placedRight.count || 0)))) : ' '}
-          </Text>
+          {placedLeft && placedRight ? (() => {
+            const resultValue = currentRound?.operator === '-' ?
+              Math.max(0, (placedLeft.count || 0) - (placedRight.count || 0)) :
+              (placedLeft.count || 0) + (placedRight.count || 0);
+
+            const face = cfg.mode === 'fruit-fruit'
+              ? renderFaceValue(resultValue, 'fruit')
+              : renderFaceValue(resultValue, 'number');
+
+            return (
+              <Text style={[styles.resultBig, { fontSize: face.fontSize }]} allowFontScaling>
+                {face.text}
+              </Text>
+            );
+          })() : <Text style={styles.resultBig}> </Text>}
         </Animated.View>
-
-        {/* Pieces row: hide when auto-placing */}
-        {!autoPlaceThisLevel ? (
-          <View style={styles.piecesRow}>
-            <TouchableOpacity onPress={() => setSelectedPiece('A')} style={[styles.piece, selectedPiece === 'A' ? styles.pieceSelected : null]}>
-              <Text style={styles.pieceFace}>{currentRound ? renderFace(currentRound.a, pieceTypeFor()) : '-'}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => setSelectedPiece('B')} style={[styles.piece, selectedPiece === 'B' ? styles.pieceSelected : null]}>
-              <Text style={styles.pieceFace}>{currentRound ? renderFace(currentRound.b, pieceTypeFor()) : '-'}</Text>
-            </TouchableOpacity>
-          </View>
-        ) : null}
 
         {renderChoicesPanel()}
 
-        <View style={styles.controlsRow}>
-          <TouchableOpacity style={[styles.btn, { marginLeft: 12 }]} onPress={() => startLevel(level)}>
-            <Text style={styles.btnText}>Reiniciar nível</Text>
-          </TouchableOpacity>
-        </View>
-
       </View>
 
-      <Modal visible={modalVisible} transparent animationType="slide">
+      {/* modal simples de "Parabéns" */}
+      <Modal visible={showCongrats} animationType="fade" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Fim do nível {level}</Text>
-            <Text style={styles.modalSubtitle}>Pontuação: {score} / {ROUNDS_PER_LEVEL}</Text>
-
-            <View style={{ flexDirection: 'row', marginTop: 14 }}>
-              {level < maxLevel ? (
-                <TouchableOpacity style={[styles.modalBtn, { marginRight: 8 }]} onPress={() => { setModalVisible(false); onNextLevel(); }}>
-                  <Text style={styles.modalBtnText}>Próximo nível</Text>
-                </TouchableOpacity>
-              ) : null}
-
-              <TouchableOpacity style={styles.modalBtn} onPress={() => { setModalVisible(false); onReplayLevel(); }}>
-                <Text style={styles.modalBtnText}>Repetir nível</Text>
-              </TouchableOpacity>
-            </View>
+          <View style={styles.modalBox}>
+            <Image source={CONGRATS_IMAGE} style={styles.congratsImage} />
+            <Text style={styles.modalTitle}>Parabéns</Text>
+            <Text style={styles.modalSubtitle}>Você concluiu!</Text>
           </View>
         </View>
       </Modal>
@@ -480,46 +630,89 @@ const styles = StyleSheet.create({
     elevation: 3,
     flexShrink: 1,
     margin: 12,
+    marginTop: 70,
   },
 
   progressRowSmall: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   progressText: { fontWeight: '800', color: '#444' },
 
   slotsRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', marginTop: 6 },
-  slot: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#eee', justifyContent: 'center', alignItems: 'center' },
+  slot: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#eee', justifyContent: 'center', alignItems: 'center', padding: 8 },
   slotFilled: { backgroundColor: '#cdebb0' },
-  slotLabel: { color: '#333', fontWeight: '900', fontSize: 20 },
+  slotLabel: { color: '#333', fontWeight: '900', fontSize: 20, textAlign: 'center', includeFontPadding: false },
 
   operatorBox: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   operator: { fontSize: 30, fontWeight: '900', color: '#333' },
 
   resultArea: { alignItems: 'center', marginTop: 16, marginBottom: 8, minHeight: 48 },
-  resultBig: { fontSize: 26, fontWeight: '900', color: '#333' },
-
-  piecesRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 20, paddingHorizontal: 12 },
-  piece: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#eee', justifyContent: 'center', alignItems: 'center', padding: 12, width: 140, height: 100 },
-  pieceSelected: { borderColor: '#ffb84d', borderWidth: 3, backgroundColor: '#fff8e6' },
-  pieceFace: { fontSize: 26, fontWeight: '900' },
+  resultBig: { fontSize: 26, fontWeight: '900', color: '#333', textAlign: 'center', includeFontPadding: false },
 
   choicesWrapper: { marginTop: 14, paddingHorizontal: 12, flexDirection: 'row', justifyContent: 'space-around', flexWrap: 'wrap' },
   choiceBtn: { backgroundColor: '#fff', paddingVertical: 12, paddingHorizontal: 18, borderRadius: 12, borderWidth: 1, borderColor: '#eee', margin: 6, minWidth: 110, alignItems: 'center' },
-  choiceText: { fontSize: 20, fontWeight: '900' },
+  choiceText: { fontSize: 20, fontWeight: '900', color: '#6b6f76' },
   choiceCorrect: { backgroundColor: '#cdebb0', borderColor: '#9ac86f' },
   choiceWrong: { backgroundColor: '#ffd6d6', borderColor: '#ff9a9a' },
 
-  controlsRow: { marginTop: 18, flexDirection: 'row', justifyContent: 'center' },
-  btn: { backgroundColor: '#6C63FF', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12 },
-  btnText: { color: '#fff', fontWeight: '800' },
-
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 18 },
-  modalCard: { width: '92%', backgroundColor: '#fffefc', borderRadius: 14, padding: 18, alignItems: 'center' },
-  modalTitle: { fontSize: 22, fontWeight: '900', color: '#333' },
-  modalSubtitle: { fontSize: 18, marginTop: 8, color: '#555' },
-  modalBtn: { backgroundColor: '#6C63FF', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, marginTop: 12 },
-  modalBtnText: { color: '#fff', fontWeight: '800' },
-
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBox: {
+    width: '80%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+  },
+  congratsImage: {
+    width: 140,
+    height: 140,
+    resizeMode: 'contain',
+    marginBottom: 10,
+  },
+  modalTitle: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 18,
+    color: '#666',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
   starsRow: { flexDirection: 'row', alignItems: 'center' },
   starEmoji: { fontSize: 26, marginRight: 6, lineHeight: 30 },
   starEmojiFilled: { color: '#FFD24D' },
   starEmojiEmpty: { color: '#C4C4C4' },
+
+  operatorBox: {
+    width: 60,                 // largura fixa confortável para operador + '='
+    alignItems: 'center',      // centraliza horizontalmente
+    justifyContent: 'center',  // centraliza verticalmente (agora o height vem do SLOT_DYNAMIC_H)
+    paddingHorizontal: 6,
+  },
+  operator: {
+    fontSize: 34,
+    fontWeight: '900',
+    color: '#6b6f76',
+    includeFontPadding: false, // remove padding vertical extra da fonte (melhora centralização)
+    lineHeight: 36,            // certifique que seja próximo ao fontSize + 2
+    textAlign: 'center',
+  },
+  equals: {
+    marginTop: 4,              // leve ajuste para ficar esteticamente separado; ajuste se quiser
+    fontSize: 28,
+    lineHeight: 30,
+  },
 });

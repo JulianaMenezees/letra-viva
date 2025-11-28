@@ -265,7 +265,7 @@ export default function DominioMathGame({ route, navigation }) {
                 },
               ]}
             >
-              <Text style={[styles.heroNumber, { fontSize: 65, position: 'absolute', left: 0, right: 0, textAlign: 'center' }]}>
+              <Text style={[styles.heroNumber, { fontSize: 50, position: 'absolute', left: 0, right: 0, textAlign: 'center' }]}>
                 {level}
               </Text>
             </View>

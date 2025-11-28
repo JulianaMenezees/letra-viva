@@ -107,7 +107,7 @@ export default function LevelsJogoMemoria({ navigation, route }) {
       setUnlockedUpTo(initialUnlocked);
       setShowCongrats(false);
       console.log("[resetProgressConfirm] progresso removido para key:", PROGRESS_KEY);
-      Alert.alert("Progresso", "Progresso resetado para testes.");
+      // Alert.alert("Progresso", "Progresso resetado para testes.");
     } catch (err) {
       console.error("Erro ao resetar progresso", err);
       Alert.alert("Erro", "Não foi possível resetar o progresso.");

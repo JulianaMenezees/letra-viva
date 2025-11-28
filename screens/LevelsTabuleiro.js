@@ -20,24 +20,21 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const TOP_IMAGE = "/mnt/data/aae93119-ceb0-44cd-a0b1-1cfeb2ee94e3.png";
 const CONGRATS_IMAGE = require("../assets/images/jogos/cacaPalavras/concluiu.png");
 
-// default inicial (se não passar route.params.totalLevels)
+// default inicial (pode ser sobrescrito via route.params.totalLevels)
 const DEFAULT_TOTAL_LEVELS = 3;
 const initialUnlocked = 1;
 
-// quantas fases por nível (deve bater com MultiGame.js)
-const PHASES_PER_LEVEL = 4;
-
-// mapa de categoria por nível (nível 1 -> matematica, 2 -> portugues, 3 -> tecnologia)
-const CATEGORIES_BY_LEVEL = ["matematica", "portugues", "tecnologia"];
-
-export default function LevelsCacaPalavras({ navigation, route }) {
+export default function LevelsTabuleiro({ navigation, route }) {
   const { width } = useWindowDimensions();
   const { speak } = useTTS();
   const timerRef = useRef(null);
 
-  // parâmetros opcionais para reutilizar a tela em outros jogos
-  const GAME_ROUTE = route?.params?.gameRouteName || "Tabuleiro"; // ex: 'Tabuleiro'
-  const PROGRESS_KEY = route?.params?.progressKey || "caca_progress_global";
+  // parâmetros opcionais para tornar a tela genérica:
+  // gameRouteName: nome da rota para navegar ao abrir um nível (ex: 'JogoMemoria' ou 'CacaPalavras')
+  // progressKey: chave do AsyncStorage (ex: 'caca_progress_global' ou 'memoria_progress_global')
+  // totalLevels: número de níveis deste jogo
+  const GAME_ROUTE = route?.params?.gameRouteName || "Pista";
+  const PROGRESS_KEY = route?.params?.progressKey || "pista_progress_global";
   const TOTAL_LEVELS = Number(route?.params?.totalLevels) || DEFAULT_TOTAL_LEVELS;
 
   const [completedLevels, setCompletedLevels] = useState([]);
@@ -45,7 +42,7 @@ export default function LevelsCacaPalavras({ navigation, route }) {
   const [showCongrats, setShowCongrats] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // carrega progresso ao montar e ao voltar ao foco
+  // carrega progresso
   useEffect(() => {
     loadProgress();
     const unsub = navigation.addListener("focus", loadProgress);
@@ -53,150 +50,70 @@ export default function LevelsCacaPalavras({ navigation, route }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [PROGRESS_KEY, TOTAL_LEVELS]);
 
-  // Detecta retorno do jogo com dados de fase concluída
-  useEffect(() => {
-    const lvl = route?.params?.completedLevel;
-    const ph = route?.params?.completedPhase;
-    if (lvl) {
-      console.log("[Levels] received completedLevel from route:", lvl, ph);
-      // atualiza o progresso (recarrega do storage)
-      loadProgress();
+  // versão robusta de loadProgress (trata strings, JSON inválido, duplicates)
+  // coloque no topo do arquivo se quiser usar a mesma const que no MultiGame
+  const PHASES_PER_LEVEL = 4; // manter sincronizado com MultiGame
 
-      // opcional: mostrar alerta curto
-      if (ph) {
-        Alert.alert("Fase concluída", `Nível ${lvl} — Fase ${ph} concluída!`);
-      } else {
-        Alert.alert("Nível concluído", `Nível ${lvl} concluído!`);
-      }
-
-      // limpa params pra não disparar de novo
-      try {
-        navigation.setParams({ completedLevel: undefined, completedPhase: undefined });
-      } catch (e) {
-        // ignora se não funcionar em algumas versões
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [route?.params?.completedLevel, route?.params?.completedPhase]);
-
-  // versão robusta de loadProgress (suporta "N", "N:P", "L1P2" e normaliza)
   async function loadProgress() {
+  try {
+    setLoading(true);
+    const raw = await AsyncStorage.getItem(PROGRESS_KEY);
+    console.log("[loadProgress] raw from AsyncStorage:", PROGRESS_KEY, raw);
+
+    let data;
     try {
-      setLoading(true);
-      const raw = await AsyncStorage.getItem(PROGRESS_KEY);
-      console.log("[Levels] loadProgress raw:", PROGRESS_KEY, raw);
-
-      let data;
-      try {
-        data = raw ? JSON.parse(raw) : { completed: [] };
-      } catch (err) {
-        console.warn("[Levels] JSON.parse falhou, resetando dados", err);
-        data = { completed: [] };
-      }
-
-      const completedRaw = Array.isArray(data.completed) ? data.completed : [];
-
-      // normaliza tudo para pares "nivel:fase" (strings)
-      const normalizedPairs = completedRaw.flatMap((v) => {
-        if (v == null) return [];
-        const s = String(v).trim();
-        // formato legacy: só número => marca todas as fases desse nível
-        if (/^\d+$/.test(s)) {
-          const lvl = Number(s);
-          return Array.from({ length: PHASES_PER_LEVEL }, (_, i) => `${lvl}:${i + 1}`);
-        }
-        // formato comum: "N:P" ou "N-P" ou "N P"
-        const m = s.match(/(\d+)[^\d]+(\d+)/);
-        if (m) return `${Number(m[1])}:${Number(m[2])}`;
-        // formato L1P2
-        const m2 = s.match(/L(\d+).*P(\d+)/i);
-        if (m2) return `${Number(m2[1])}:${Number(m2[2])}`;
-        // ignorar outros formatos
-        return [];
-      }).filter(Boolean);
-
-      // dedupe
-      const dedupedPairs = Array.from(new Set(normalizedPairs));
-
-      // construir mapa nível -> set de fases concluídas
-      const levelToPhases = {};
-      dedupedPairs.forEach((p) => {
-        const [ls, ps] = p.split(":");
-        const lvl = Number(ls);
-        const ph = Number(ps);
-        if (!Number.isFinite(lvl) || !Number.isFinite(ph)) return;
-        if (!levelToPhases[lvl]) levelToPhases[lvl] = new Set();
-        levelToPhases[lvl].add(ph);
-      });
-
-      console.log("[Levels] normalized pairs:", dedupedPairs);
-      console.log(
-        "[Levels] completed per level:",
-        Object.fromEntries(
-          Object.entries(levelToPhases).map(([k, set]) => [k, Array.from(set).sort((a, b) => a - b)])
-        )
-      );
-
-      // === Opção B2: marca nível como "completado" quando existe pelo menos 1 fase concluída
-      const levelsWithAnyPhase = Object.keys(levelToPhases)
-        .map((k) => Number(k))
-        .filter((lvl) => levelToPhases[lvl].size > 0)
-        .sort((a, b) => a - b);
-
-      console.log("[Levels] levelsWithAnyPhase:", levelsWithAnyPhase);
-
-      // atualiza estado
-      setCompletedLevels(levelsWithAnyPhase);
-      const maxCompleted = levelsWithAnyPhase.length ? Math.max(...levelsWithAnyPhase) : 0;
-      setUnlockedUpTo(Math.max(initialUnlocked, maxCompleted + 1));
-
-      // se concluiu todos -> modal
-      if (levelsWithAnyPhase.length >= TOTAL_LEVELS && TOTAL_LEVELS > 0) {
-        setShowCongrats(true);
-        speak?.("Parabéns! Você concluiu todos os níveis deste jogo!");
-        if (timerRef.current) clearTimeout(timerRef.current);
-        timerRef.current = setTimeout(() => {
-          setShowCongrats(false);
-        }, 4000);
-      }
+      data = raw ? JSON.parse(raw) : { completed: [] };
     } catch (err) {
-      console.error("Erro ao carregar progresso", err);
-    } finally {
-      setLoading(false);
+      console.warn("[loadProgress] JSON.parse falhou, resetando dados", err);
+      data = { completed: [] };
     }
+
+    const completedRaw = Array.isArray(data.completed) ? data.completed : [];
+    
+    // Filtra apenas os níveis completos (números)
+    const completedLevels = completedRaw
+      .filter(item => /^\d+$/.test(String(item)))
+      .map(Number)
+      .sort((a, b) => a - b);
+
+    console.log("[loadProgress] completed levels:", completedLevels);
+
+    setCompletedLevels(completedLevels);
+
+    // Calcula o próximo nível desbloqueado
+    const maxCompleted = completedLevels.length > 0 ? Math.max(...completedLevels) : 0;
+    const nextUnlocked = Math.max(initialUnlocked, maxCompleted + 1);
+    
+    console.log("[loadProgress] unlockedUpTo:", nextUnlocked);
+    setUnlockedUpTo(nextUnlocked);
+
+    // Verifica se todos os níveis foram completados
+    if (completedLevels.length >= TOTAL_LEVELS && TOTAL_LEVELS > 0) {
+      setShowCongrats(true);
+      speak?.("Parabéns! Você concluiu todos os níveis deste jogo!");
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        setShowCongrats(false);
+      }, 4000);
+    }
+  } catch (err) {
+    console.error("Erro ao carregar progresso", err);
+  } finally {
+    setLoading(false);
   }
-
-  // salva nível completo (pode ser usado por debug; o Jogo salva seu próprio progresso)
-  async function markLevelComplete(level) {
+}
+  // função para resetar (útil para debug / testes)
+  async function resetProgressConfirm() {
     try {
-      const lvl = Number(level);
-      if (!Number.isFinite(lvl)) {
-        console.warn("[Levels] markLevelComplete level inválido:", level);
-        return;
-      }
-
-      const raw = await AsyncStorage.getItem(PROGRESS_KEY);
-      let data;
-      try {
-        data = raw ? JSON.parse(raw) : { completed: [] };
-      } catch (err) {
-        data = { completed: [] };
-      }
-
-      const completedRaw = Array.isArray(data.completed) ? data.completed : [];
-      const completedNums = completedRaw.map((v) => Number(v)).filter((n) => Number.isFinite(n));
-
-      if (!completedNums.includes(lvl)) {
-        const newCompleted = [...completedNums, lvl].filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
-        await AsyncStorage.setItem(PROGRESS_KEY, JSON.stringify({ completed: newCompleted }));
-        setCompletedLevels(newCompleted);
-        setUnlockedUpTo(Math.max(initialUnlocked, Math.max(...newCompleted) + 1));
-        console.log("[Levels] markLevelComplete saved:", newCompleted);
-      } else {
-        console.log("[Levels] nível já marcado:", lvl);
-      }
+      await AsyncStorage.removeItem(PROGRESS_KEY);
+      setCompletedLevels([]);
+      setUnlockedUpTo(initialUnlocked);
+      setShowCongrats(false);
+      console.log("[resetProgressConfirm] progresso removido para key:", PROGRESS_KEY);
+      // Alert.alert("Progresso", "Progresso resetado para testes.");
     } catch (err) {
-      console.error("Erro ao marcar nível", err);
+      console.error("Erro ao resetar progresso", err);
+      Alert.alert("Erro", "Não foi possível resetar o progresso.");
     }
   }
 
@@ -207,19 +124,16 @@ export default function LevelsCacaPalavras({ navigation, route }) {
     const completed = completedLevels.includes(level);
     const unlocked = level <= unlockedUpTo;
 
-    // categoria a enviar para o jogo (mapa por nível)
-    const category = CATEGORIES_BY_LEVEL[level - 1] || route?.params?.gameCategory || "matematica";
-
     return (
       <TouchableOpacity
         activeOpacity={0.85}
         onPress={() => {
           if (!unlocked) return;
+          // NÃO passar funções aqui — somente dados serializáveis
           navigation.navigate(GAME_ROUTE, {
             level,
-            phase: 1, // abre a fase 1 — depois você pode mudar pra abrir modal/fase específica
             progressKey: PROGRESS_KEY,
-            category, // passa categoria correta pro jogo
+            // opcional: você pode passar titleImage ou outros dados primitivos
           });
         }}
         style={[styles.levelButton, !unlocked && styles.levelButtonLocked, completed && styles.levelButtonCompleted]}
@@ -229,34 +143,76 @@ export default function LevelsCacaPalavras({ navigation, route }) {
             <Text style={[styles.levelCircleText, completed && styles.levelCircleTextCompleted]}>{level}</Text>
           </View>
 
-          <Text style={[styles.levelText, completed && styles.levelTextCompleted, !unlocked && styles.levelTextLocked]}>Nível {level}</Text>
+          <Text style={[styles.levelText, completed && styles.levelTextCompleted, !unlocked && styles.levelTextLocked]}>
+            Nível {level}
+          </Text>
         </View>
 
         <View style={styles.rightBox}>
-          {!unlocked ? <Text style={styles.lockText}>🔒</Text> : completed ? <Text style={styles.okText}>✔ Concluído</Text> : <Text style={styles.playText}>▶ Jogar</Text>}
+          {!unlocked ? <Text style={styles.lockText}></Text> : completed ? <Text style={styles.okText}>✔</Text> : <Text style={styles.playText}>▶</Text>}
         </View>
       </TouchableOpacity>
     );
   }
 
+  const DECOR_TOP_RIGHT = require("../assets/images/jogos/niveis/estrelas.png");
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <ImageBackground source={{ uri: TOP_IMAGE }} style={styles.topImage} imageStyle={{ opacity: 0.12 }}>
+        {/* top image (se quiser ativar) */}
+        {/* <ImageBackground source={{ uri: TOP_IMAGE }} style={styles.topImage} imageStyle={{ opacity: 0.12 }}>
           <View style={styles.topBar}>
-            <Image source={require("../assets/images/jogos/cacaPalavras/pista_jogos.png")} style={styles.titleImage} resizeMode="contain" />
+            <Image source={require("../assets/images/jogos/cacaPalavras/titulo.png")} style={styles.titleImage} resizeMode="contain" />
           </View>
-        </ImageBackground>
+        </ImageBackground> */}
 
         <View style={styles.container}>
           <View style={styles.wordsCard}>
-            <Text style={styles.cardHeader}>Níveis</Text>
 
+            {/* ESTRELA AGORA NA ESQUERDA */}
+            <Image
+              source={DECOR_TOP_RIGHT}
+              style={[styles.decorCornerInside, styles.topLeftInside]}
+              pointerEvents="none"
+              resizeMode="contain"
+            />
+
+            {/* ÁUDIO AGORA NA DIREITA */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                speak?.("Toque em um nível para começar");
+              }}
+              style={styles.audioButtonRight}
+              accessibilityLabel="Botão de áudio"
+            >
+              <Text style={styles.audioIcon}>🔊</Text>
+            </TouchableOpacity>
+
+            {/* conteúdo real do cartão */}
             <View style={styles.board}>
-              <Text style={styles.boardTitle}>Escolha um nível</Text>
-
-              <FlatList data={levels} renderItem={renderItem} keyExtractor={(i) => i.toString()} scrollEnabled={false} />
+              <FlatList
+                data={levels}
+                renderItem={renderItem}
+                keyExtractor={(i) => i.toString()}
+                scrollEnabled={false}
+                contentContainerStyle={{
+                  paddingTop: 70,
+                }}
+              />
             </View>
+
+            <View style={{ marginTop: 20, alignItems: "center" }}>
+              <TouchableOpacity
+                style={styles.resetButton}
+                onPress={resetProgressConfirm}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.resetButtonText}>↻</Text>
+              </TouchableOpacity>
+            </View>
+
           </View>
         </View>
       </ScrollView>
@@ -269,7 +225,13 @@ export default function LevelsCacaPalavras({ navigation, route }) {
             <Text style={styles.modalTitle}>Parabéns!</Text>
             <Text style={styles.modalSubtitle}>Você concluiu todos os níveis!</Text>
 
-            <TouchableOpacity style={styles.modalButton} activeOpacity={0.9} onPress={() => setShowCongrats(false)}>
+            <TouchableOpacity
+              style={styles.modalButton}
+              activeOpacity={0.9}
+              onPress={() => {
+                setShowCongrats(false);
+              }}
+            >
               <Text style={styles.modalButtonText}>OK</Text>
             </TouchableOpacity>
           </View>
@@ -281,27 +243,23 @@ export default function LevelsCacaPalavras({ navigation, route }) {
 
 /* ---------- estilos ---------- */
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#e5ddc8" },
+  safe: { flex: 1, backgroundColor: "#add778" },
   scroll: { paddingBottom: 40 },
   topImage: {
     width: "100%",
     paddingVertical: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#cdebb0",
+    backgroundColor: "#add778",
   },
-  titleImage: {
-    height: 230,
-    aspectRatio: 200,
-    alignSelf: "center",
-    marginTop: 20,
-  },
+  titleImage: { height: 230, aspectRatio: 200, alignSelf: "center", marginTop: 20 },
   topBar: { width: "92%", alignItems: "center" },
 
   container: { alignItems: "center", paddingHorizontal: 16, paddingTop: 10 },
 
   wordsCard: {
-    width: "105%",
+    position: "relative",   // <- importante para imagens absolutas internas
+    width: "100%",
     backgroundColor: "#fff7ee",
     borderRadius: 16,
     padding: 20,
@@ -311,10 +269,12 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
-    marginTop: 60,
+    marginTop: 200,
+    minHeight: 200,   // << AQUI O QUE VOCÊ QUER
+    overflow: "hidden", // corta partes das imagens que saiam do cartão (mude para "visible" se preferir)
   },
 
-  cardHeader: { fontSize: 16, color: "#6b6f76", fontWeight: "700", marginBottom: 8, textAlign: "center" },
+  cardHeader: { fontSize: 30, color: "#6b6f76", fontWeight: "700", marginBottom: 8, textAlign: "center" },
 
   boardTitle: { fontSize: 18, fontWeight: "800", color: "#9a5fcc", marginBottom: 12, textAlign: "center" },
 
@@ -375,4 +335,81 @@ const styles = StyleSheet.create({
   modalButton: { marginTop: 14, backgroundColor: "#EC707A", paddingVertical: 10, paddingHorizontal: 22, borderRadius: 14 },
 
   modalButtonText: { color: "#fff", fontWeight: "800", fontSize: 16 },
+
+  /* decor internas */
+  decorCornerInside: {
+    position: "absolute",
+    width: 100,          // ajuste para caber bem dentro do cartão
+    height: 100,
+    opacity: 1,
+    zIndex: 2,
+  },
+
+  topLeftInside: {
+    top: 8,
+    left: 20,
+    transform: [{ rotate: "0deg" }],
+  },
+  topRightInside: {
+    top: 8,
+    right: 8,
+    transform: [{ rotate: "0deg" }],
+  },
+  bottomLeftInside: {
+    bottom: 8,
+    left: 8,
+    transform: [{ rotate: "-10deg" }],
+  },
+  bottomRightInside: {
+    bottom: 8,
+    right: 8,
+    transform: [{ rotate: "10deg" }],
+  },
+
+  lockText: {
+    color: "#333",
+    fontSize: 20,
+  },
+
+  okText: {
+    color: "#add778",
+    fontSize: 20,
+    fontWeight: "700"
+  },
+
+  playText: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "700"
+  },
+
+  audioButtonRight: {
+    position: "absolute",
+    top: 8,
+    right: 8,      // <-- agora do lado direito
+    width: 70,
+    height: 100,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 6,
+  },
+  audioIcon: {
+    fontSize: 30,
+    textAlign: "center",
+  },
+  resetButton: {
+    backgroundColor: "#EC707A",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 10,
+  },
+
+  resetButtonText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+
 });

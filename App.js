@@ -85,7 +85,7 @@ export default function App() {
         <Stack.Screen name="LevelsDomino" component={LevelsDomino} />
         <Stack.Screen name="QuebraCabeca" component={QuebraCabecaScreen} />
         <Stack.Screen name="LevelsQuebraCabeca" component={LevelsQuebraCabeca} />
-        <Stack.Screen name="Tabuleiro" component={TabuleiroScreen} />
+        <Stack.Screen name="Pista" component={TabuleiroScreen} />
         <Stack.Screen name="LevelsTabuleiro" component={LevelsTabuleiro} />
         <Stack.Screen name="Resultado" component={Resultado} />
       </Stack.Navigator>
