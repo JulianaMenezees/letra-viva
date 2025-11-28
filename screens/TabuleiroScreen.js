@@ -61,89 +61,64 @@ const PROGRESS_KEY = "pista_progress_global";
 
 
 /* ========== helper: salva progresso por fase ========== */
-async function savePhaseProgress(progressKey = "pista_progress_global", level, phase) {
+async function savePhaseProgress(
+  progressKey = "pista_progress_global",
+  level,
+  phase
+) {
   try {
     const key = progressKey || "pista_progress_global";
+
     const raw = await AsyncStorage.getItem(key);
-    let data;
-    try {
-      data = raw ? JSON.parse(raw) : { completed: [] };
-    } catch {
-      data = { completed: [] };
+    let data = raw ? JSON.parse(raw) : { completed: [] };
+
+    const existing = Array.isArray(data.completed)
+      ? data.completed.map(String)
+      : [];
+
+    // Aceita apenas formatos "n:n"
+    const normalized = existing.filter(x => /^\d+:\d+$/.test(x) || /^\d+$/.test(x));
+
+    const pair = `${level}:${phase}`;
+
+    // adiciona fase
+    const next = Array.from(new Set([...normalized, pair]));
+
+    // conta quantas fases desse nível já foram feitas
+    const phasesDone = next.filter(p => p.startsWith(`${level}:`)).length;
+
+    // se completou todas, adiciona o nível
+    if (phasesDone === PHASES_PER_LEVEL) {
+      next.push(String(level));
     }
-    // existing entries como strings
-    const existing = Array.isArray(data.completed) ? data.completed.map(String) : [];
 
-    // normalize entradas antigas (N => N:1..N:PHASES_PER_LEVEL) e também mantém pares já em formato "L:P"
-    const normalized = existing
-      .flatMap((x) => {
-        const s = String(x).trim();
-        if (/^\d+$/.test(s)) {
-          const lvl = Number(s);
-          return Array.from({ length: PHASES_PER_LEVEL }, (_, i) => `${lvl}:${i + 1}`);
-        }
-        const m = s.match(/(\d+)[^\d]+(\d+)/);
-        if (m) return `${Number(m[1])}:${Number(m[2])}`;
-        const t = s.match(/L(\d+).*P(\d+)/i);
-        if (t) return `${Number(t[1])}:${Number(t[2])}`;
-        // se já for algo como "1:2" retorna tal como está
-        return s;
-      })
-      .filter(Boolean);
-
-    const pair = `${Number(level)}:${Number(phase)}`;
-
-    // junta e deduplica
-    const nextPairs = Array.from(new Set([...normalized, pair])).sort((a, b) => {
+    next.sort((a, b) => {
       const [la, pa] = a.split(":").map(Number);
       const [lb, pb] = b.split(":").map(Number);
+
+      if (isNaN(pa) && !isNaN(pb)) return 1;
+      if (!isNaN(pa) && isNaN(pb)) return -1;
+
       if (la !== lb) return la - lb;
-      return pa - pb;
+      return (pa || 0) - (pb || 0);
     });
 
-    // agora verificamos se todas as fases do `level` estão presentes — se sim, também adicionamos o nível numérico
-    const pairsForLevel = nextPairs.filter(p => {
-      const m = String(p).match(/^(\d+):(\d+)$/);
-      return m && Number(m[1]) === Number(level);
-    });
-
-    const shouldAddNumericLevel = pairsForLevel.length >= PHASES_PER_LEVEL;
-
-    // construir array final que salva: pares + (opcional) número do nível
-    const finalSet = new Set(nextPairs);
-    if (shouldAddNumericLevel) finalSet.add(String(Number(level))); // ex: "1"
-
-    const finalArray = Array.from(finalSet).sort((a, b) => {
-      // sorting: números puros primeiro (por valor), depois pares por level,phase
-      const an = /^\d+$/.test(a);
-      const bn = /^\d+$/.test(b);
-      if (an && bn) return Number(a) - Number(b);
-      if (an && !bn) return -1;
-      if (!an && bn) return 1;
-      // ambos pares "L:P"
-      const [la, pa] = a.split(":").map(Number);
-      const [lb, pb] = b.split(":").map(Number);
-      if (la !== lb) return la - lb;
-      return pa - pb;
-    });
-
-    await AsyncStorage.setItem(key, JSON.stringify({ completed: finalArray }));
-    return finalArray;
+    await AsyncStorage.setItem(key, JSON.stringify({ completed: next }));
   } catch (err) {
-    console.error("savePhaseProgress error", err);
-    throw err;
+    console.warn("Erro ao salvar progresso:", err);
   }
 }
 
+
 /* ========== MultiGame (entry) ========== */
-export default function MultiGame({ navigation, route, category: propCategory = "portugues", phase: propPhase = 1, onFinish }) {
+export default function MultiGame({ navigation, route, category: propCategory = "matematica", phase: propPhase = 1, onFinish }) {
   const level = Number(route?.params?.level) || 1;
   let phase = Number(route?.params?.phase) || Number(propPhase) || 1;
   if (!Number.isFinite(phase) || phase < 1) phase = 1;
   if (phase > PHASES_PER_LEVEL) phase = PHASES_PER_LEVEL;
 
   // category may come from route.params.category or propCategory
-  const category = route?.params?.category || route?.params?.gameCategory || propCategory || "portugues";
+  const category = route?.params?.category || route?.params?.gameCategory || propCategory || "matematica";
 
   if (category === "matematica") {
     return <MathRace navigation={navigation} route={route} level={level} phase={phase} onFinish={onFinish} />;
@@ -214,7 +189,7 @@ function MathRace({ navigation, route, level = 1, phase = 1, onFinish }) {
     // salva e volta p/levels (opção 1)
     const lvl = Number(level) || 1;
     const ph = Number(phase) || 1;
-    const progressKey = route?.params?.progressKey || "caca_progress_global";
+    const progressKey = route?.params?.progressKey || "pista_progress_global";
     try { await savePhaseProgress(progressKey, lvl, ph); } catch (e) { console.warn(e); }
     try {
       navigation.navigate("LevelsTabuleiro", { completedLevel: lvl, completedPhase: ph, progressKey });

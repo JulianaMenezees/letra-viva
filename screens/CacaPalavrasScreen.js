@@ -720,8 +720,8 @@ const styles = StyleSheet.create({
   },
 
   muteButton: {
-    width: 48,
-    height: 48,
+    width: 47,
+    height: 47,
     borderRadius: 10,
     alignItems: "center",
     top: 10

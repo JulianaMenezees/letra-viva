@@ -76,15 +76,15 @@ export default function LoginScreen({ navigation }) {
         {/* Botões de áudio */}
         <View style={{ flexDirection: 'row' }}>
           <TouchableOpacity
-            onPress={() => speak(' Toque em 1 para logar com a sua biometria cadastrada. Em 2. você pode digitar seu PIN de seis números no quadradinho abaixo. Caso tenha esquecido o PIN, aperte em 3 para criar um novo.')}
+            onPress={() => speak(' Toque em 1 para logar com a sua biometria cadastrada. Em 2. você pode digitar seu PIN de seis números no quadradinho abaixo. E Para confirmar, aperte em 3. Caso tenha esquecido o PIN, aperte em 4 para criar um novo.')}
             style={{ marginRight: 12 }}
           >
-            <Text style={{ fontSize: 28 }}>🔊</Text>
+            <Text style={{ fontSize: 28, top: 10 }}>🔊</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => Speech.stop()}
           >
-            <Text style={{ fontSize: 28 }}>🔇</Text>
+            <Text style={{ fontSize: 27, top: 13}}>🔇</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -154,7 +154,7 @@ export default function LoginScreen({ navigation }) {
           }}
           disabled={pin.length !== 6}
         >
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>Entrar</Text>
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>3. Entrar</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -164,7 +164,7 @@ export default function LoginScreen({ navigation }) {
             paddingVertical: 12,
           }}
         >
-          <Text style={{ color: 'red', fontWeight: '600', fontSize: 16 }}>3. Esqueci meu PIN</Text>
+          <Text style={{ color: 'red', fontWeight: '600', fontSize: 16 }}>4. Esqueci meu PIN</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

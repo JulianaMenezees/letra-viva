@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import useTTS from "../utils/useTTS";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Speech from "expo-speech";
 
 const TOP_IMAGE = "/mnt/data/aae93119-ceb0-44cd-a0b1-1cfeb2ee94e3.png";
 const CONGRATS_IMAGE = require("../assets/images/jogos/cacaPalavras/concluiu.png");
@@ -182,7 +183,7 @@ export default function LevelsDomino({ navigation, route }) {
                 activeOpacity={0.85}
                 onPress={() =>
                   speak?.(
-                    "Toque em 1 para iniciar o primeiro nível. Quando você concluir ele, os próximos níveis serão desbloqueados. Boa sorte!"
+                    "  Toque em 1 para iniciar o primeiro nível. Quando você concluir ele, os próximos níveis serão desbloqueados. Boa sorte! Assim que você completar todos os níveis, aperte no botãozinho de voltar, logo abaixo, para reiniciar o progresso dos níveis"
                   )
                 }
                 style={styles.audioButton}
@@ -404,10 +405,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     zIndex: 6,
   },
-  audioIcon: {
-    fontSize: 30,
-    textAlign: "center",
-  },
   resetButton: {
     backgroundColor: "#EC707A",
     paddingVertical: 10,
@@ -433,11 +430,12 @@ const styles = StyleSheet.create({
   },
 
   audioButton: {
-    width: 52,
+    width: 50,
     height: 52,
     borderRadius: 25,
     alignItems: "center",
     justifyContent: "center",
+    top: 1
   },
 
   audioIcon: {
@@ -445,15 +443,16 @@ const styles = StyleSheet.create({
   },
 
   muteButton: {
-    width: 52,
-    height: 52,
+    width: 48,
+    height: 48,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+    top: 4
   },
 
   muteIcon: {
-    fontSize: 25,
+    fontSize: 24,
   },
 
 });

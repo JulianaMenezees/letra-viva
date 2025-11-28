@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import useTTS from '../utils/useTTS';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Speech from "expo-speech";
 
 function shuffle(array) {
   const a = array.slice();
@@ -89,7 +90,7 @@ export default function JogoMemoriaScreen({ navigation, route }) {
 
   useEffect(() => {
     startNewGame();
-    speak?.(`Você abriu o nível ${level}. Encontre os pares que representam as mesmas quantidades.`);
+    // speak?.(`Você abriu o nível ${level}. Encontre os pares que representam as mesmas quantidades.`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [level]);
 
@@ -209,14 +210,36 @@ export default function JogoMemoriaScreen({ navigation, route }) {
           </View>
 
           <TouchableOpacity activeOpacity={0.8} onPress={() => speak(`Nível ${level}`)} style={styles.heroButton}>
-            <View style={[styles.heroCircle, { width: headerIconSize + 20, height: headerIconSize + 20, borderRadius: (headerIconSize + 20) / 2, transform: [{ translateX: -10 }], }]}>
+            <View style={[styles.heroCircle, { width: headerIconSize + 20, height: headerIconSize + 20, borderRadius: (headerIconSize + 20) / 2, transform: [{ translateX: -2 }], }]}>
               <Text style={[styles.heroNumber, { fontSize: Math.round(headerIconSize * 0.55), position: 'absolute', left: 0, right: 0, textAlign: 'center' }]}>{level}</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.speakerButton} onPress={() => speak(`Vamos jogar! Nível ${level}`)}>
-            <Text style={styles.speakerEmoji}>🔊</Text>
-          </TouchableOpacity>
+          {/* ÁUDIO: 2 botões lado a lado */}
+          <View style={styles.audioContainer}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() =>
+                speak?.(
+                  `  Você abriu o nível ${level}. Assim como num jodo da memória, procure uma carta de bolinhas e frutas, que tenham a mesma `
+                )
+              }
+              style={styles.audioButton}
+              accessibilityLabel="Botão de áudio"
+            >
+              <Text style={styles.audioIcon}>🔊</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => Speech.stop()}
+              style={styles.muteButton}
+              accessibilityLabel="Parar fala"
+            >
+              <Text style={styles.muteIcon}>🔇</Text>
+            </TouchableOpacity>
+          </View>
+
+
         </View>
       </View>
 
@@ -401,5 +424,41 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
+  /* --- ÁUDIO (botões) --- */
+  audioContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    // se quiser empurrar mais para baixo dentro do header, use marginTop: 12
+    // ex: marginTop: 12,
+  },
+
+  audioButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+
+  },
+
+  audioIcon: {
+    fontSize: 28,
+  },
+
+  muteButton: {
+    width: 47,
+    height: 47,
+    borderRadius: 10,
+    alignItems: "center",
+    top: 10
+  },
+
+  muteIcon: {
+    fontSize: 25,
+  },
+
 });
+
+
+
 

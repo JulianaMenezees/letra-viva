@@ -21,31 +21,16 @@ export default function HomeScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
-      speak('Bem-vinda(o) ao Letra Viva. Escolha um módulo para começar.');
+      speak('Bem-vinda(o) ao Letra Viva. Escolha um módulo para começar. Aperte no botão verde, para acessar o módulo de portugês, aperte no botão rosa, para acessar o módulo de matemática, aperte no roxo, para acessar o módulo de tecnologia, aperte no amarelo para acessar o módulo de jogos e  aperte no botçao cinza, para sair da sua conta');
       return () => { };
     }, [])
   );
 
-  const handleLogout = async () => {
-    speak('Você apertou para sair. Deseja realmente sair da sua conta? Aperte em 1 para sair. Ou aperte em 2 para cancelar');
-    setTimeout(() => {
-      Alert.alert(
-        'Sair',
-        'Deseja realmente sair?',
-        [
-          { text: '2. Cancelar', style: 'cancel' },
-          {
-            text: '1. Sim',
-            onPress: async () => {
-              await removeToken();
-              navigation.replace('Inicial');
-            },
-            style: 'destructive',
-          },
-        ]
-      );
-    }, 500);
+  const handleLogout = () => {
+    speak('Saindo da sua conta');
+    navigation.replace("Inicial");
   };
+
 
   const toggleMenu = () => {
     setMenuVisible(!menuVisible);
@@ -162,10 +147,41 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
 
         </View>
+
+
+        {/* SEGUNDA LINHA */}
+        <View style={styles.linhaModulos}>
+          {/* MÓDULO 3 - TECNOLOGIA */}
+          {/* <TouchableOpacity
+            style={[styles.moduloQuadrado, { backgroundColor: '#9A5FCC' }]}
+            onPress={() => navigation.navigate('ModuleTecnology')}
+          >
+            <Text style={styles.moduloEmoji}>📱</Text>
+            <Text style={styles.moduloTitulo}>Tecnologia</Text>
+          </TouchableOpacity> */}
+
+          <TouchableOpacity
+            style={[styles.moduloQuadrado, { backgroundColor: '#a2a8b3ff' }]}
+            onPress={() => {
+              setMenuVisible(false);
+              handleLogout();
+              // speak('Você apertou para sair. Deseja realmente sair da sua conta? Aperte em 1 para sair. Ou aperte em 2 para cancelar');
+
+            }}
+
+          >
+            <Image
+              source={require('../assets/images/home/home_sair.png')}
+              style={{ width: 90, height: 90, marginBottom: 8 }}
+              resizeMode="contain"
+            />
+            <Text style={[styles.moduloTitulo, { color: '#fff', fontSize: 20 }]}>Sair</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* MODAL DO MENU DE SEGURANÇA */}
-      <Modal
+      {/* <Modal
         visible={menuVisible}
         transparent
         animationType="slide"
@@ -175,49 +191,17 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.menuContainer}>
             <Text style={styles.menuTitulo}>Menu de Segurança</Text>
 
-            <ScrollView style={styles.menuScroll}>
-              <LargeButton
-                title="👤 Perfil"
-                color="#8AC6D1"
-                onPress={() => {
-                  setMenuVisible(false);
-                  navigation.navigate('Perfil');
-                }}
-              />
-
-              <LargeButton
-                title="⚙️ Configurações"
-                color="#9a5fcc"
-                onPress={() => {
-                  setMenuVisible(false);
-                  navigation.navigate('Configuracoes');
-                }}
-              />
+            <ScrollView
+              contentContainerStyle={styles.menuScrollContent}
+              style={styles.menuScroll}
+            >
 
               <LargeButton
                 title="🔒 Alterar PIN"
                 color="#ec707a"
                 onPress={() => {
                   setMenuVisible(false);
-                  navigation.navigate('AlterarPIN');
-                }}
-              />
-
-              <LargeButton
-                title="📊 Estatísticas"
-                color="#4CAF50"
-                onPress={() => {
-                  setMenuVisible(false);
-                  navigation.navigate('Estatisticas');
-                }}
-              />
-
-              <LargeButton
-                title="❓ Ajuda"
-                color="#FFB703"
-                onPress={() => {
-                  setMenuVisible(false);
-                  navigation.navigate('Ajuda');
+                  navigation.navigate('PinSetup');
                 }}
               />
 
@@ -236,7 +220,7 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </Modal> */}
     </View>
   );
 }
@@ -334,8 +318,14 @@ const styles = StyleSheet.create({
   menuScroll: {
     maxHeight: 400,
   },
+  menuScrollContent: {
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 20,
+  },
+
   fecharMenu: {
-    backgroundColor: '#4A88E0',
+    backgroundColor: '#9a5fcc',
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
@@ -346,4 +336,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+
 });

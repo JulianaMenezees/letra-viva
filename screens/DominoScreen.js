@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import useTTS from '../utils/useTTS';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Speech from "expo-speech";
 
 const TITLE_IMAGE = '/mnt/data/A_2D_digital_graphic_design_displays_the_title_"Jo.png';
 
@@ -95,7 +96,7 @@ export default function DominioMathGame({ route, navigation }) {
 
   useEffect(() => {
     startGame();
-    speak?.(`Nível ${level}. Toque em uma peça e depois na outra para conectar somas iguais.`);
+    // speak?.(`Nível ${level}. Toque em uma peça e depois na outra para conectar somas iguais.`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [level]);
 
@@ -261,7 +262,7 @@ export default function DominioMathGame({ route, navigation }) {
                   width: 110,
                   height: 110,
                   borderRadius: 60,
-                  transform: [{ translateX: -10 }],
+                  transform: [{ translateX: -2 }],
                 },
               ]}
             >
@@ -271,9 +272,30 @@ export default function DominioMathGame({ route, navigation }) {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.speakerButton} onPress={() => speak(`Vamos jogar! Nível ${level}`)}>
-            <Text style={styles.speakerEmoji}>🔊</Text>
-          </TouchableOpacity>
+          {/* ÁUDIO: 2 botões lado a lado */}
+          <View style={styles.audioContainer}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() =>
+                speak?.(
+                  `  Você abriu o nível ${level}. Indique os pares de frutas, que representam as mesmas quantidades das bolinhas.`
+                )
+              }
+              style={styles.audioButton}
+              accessibilityLabel="Botão de áudio"
+            >
+              <Text style={styles.audioIcon}>🔊</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => Speech.stop()}
+              style={styles.muteButton}
+              accessibilityLabel="Parar fala"
+            >
+              <Text style={styles.muteIcon}>🔇</Text>
+            </TouchableOpacity>
+          </View>
+
         </View>
       </View>
 
@@ -446,4 +468,38 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
+  /* --- ÁUDIO (botões) --- */
+  audioContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    // se quiser empurrar mais para baixo dentro do header, use marginTop: 12
+    // ex: marginTop: 12,
+  },
+
+  audioButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+
+  },
+
+  audioIcon: {
+    fontSize: 28,
+  },
+
+  muteButton: {
+    width: 47,
+    height: 47,
+    borderRadius: 10,
+    alignItems: "center",
+    top: 10
+  },
+
+  muteIcon: {
+    fontSize: 25,
+  },
+
 });
+

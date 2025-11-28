@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import useTTS from "../utils/useTTS";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Speech from "expo-speech";
 
 const TOP_IMAGE = "/mnt/data/aae93119-ceb0-44cd-a0b1-1cfeb2ee94e3.png";
 const CONGRATS_IMAGE = require("../assets/images/jogos/cacaPalavras/concluiu.png");
@@ -55,53 +56,53 @@ export default function LevelsTabuleiro({ navigation, route }) {
   const PHASES_PER_LEVEL = 4; // manter sincronizado com MultiGame
 
   async function loadProgress() {
-  try {
-    setLoading(true);
-    const raw = await AsyncStorage.getItem(PROGRESS_KEY);
-    console.log("[loadProgress] raw from AsyncStorage:", PROGRESS_KEY, raw);
-
-    let data;
     try {
-      data = raw ? JSON.parse(raw) : { completed: [] };
+      setLoading(true);
+      const raw = await AsyncStorage.getItem(PROGRESS_KEY);
+      console.log("[loadProgress] raw from AsyncStorage:", PROGRESS_KEY, raw);
+
+      let data;
+      try {
+        data = raw ? JSON.parse(raw) : { completed: [] };
+      } catch (err) {
+        console.warn("[loadProgress] JSON.parse falhou, resetando dados", err);
+        data = { completed: [] };
+      }
+
+      const completedRaw = Array.isArray(data.completed) ? data.completed : [];
+
+      // Filtra apenas os níveis completos (números)
+      const completedLevels = completedRaw
+        .filter(item => /^\d+$/.test(String(item)))
+        .map(Number)
+        .sort((a, b) => a - b);
+
+      console.log("[loadProgress] completed levels:", completedLevels);
+
+      setCompletedLevels(completedLevels);
+
+      // Calcula o próximo nível desbloqueado
+      const maxCompleted = completedLevels.length > 0 ? Math.max(...completedLevels) : 0;
+      const nextUnlocked = Math.max(initialUnlocked, maxCompleted + 1);
+
+      console.log("[loadProgress] unlockedUpTo:", nextUnlocked);
+      setUnlockedUpTo(nextUnlocked);
+
+      // Verifica se todos os níveis foram completados
+      if (completedLevels.length >= TOTAL_LEVELS && TOTAL_LEVELS > 0) {
+        setShowCongrats(true);
+        speak?.("Parabéns! Você concluiu todos os níveis deste jogo!");
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => {
+          setShowCongrats(false);
+        }, 4000);
+      }
     } catch (err) {
-      console.warn("[loadProgress] JSON.parse falhou, resetando dados", err);
-      data = { completed: [] };
+      console.error("Erro ao carregar progresso", err);
+    } finally {
+      setLoading(false);
     }
-
-    const completedRaw = Array.isArray(data.completed) ? data.completed : [];
-    
-    // Filtra apenas os níveis completos (números)
-    const completedLevels = completedRaw
-      .filter(item => /^\d+$/.test(String(item)))
-      .map(Number)
-      .sort((a, b) => a - b);
-
-    console.log("[loadProgress] completed levels:", completedLevels);
-
-    setCompletedLevels(completedLevels);
-
-    // Calcula o próximo nível desbloqueado
-    const maxCompleted = completedLevels.length > 0 ? Math.max(...completedLevels) : 0;
-    const nextUnlocked = Math.max(initialUnlocked, maxCompleted + 1);
-    
-    console.log("[loadProgress] unlockedUpTo:", nextUnlocked);
-    setUnlockedUpTo(nextUnlocked);
-
-    // Verifica se todos os níveis foram completados
-    if (completedLevels.length >= TOTAL_LEVELS && TOTAL_LEVELS > 0) {
-      setShowCongrats(true);
-      speak?.("Parabéns! Você concluiu todos os níveis deste jogo!");
-      if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => {
-        setShowCongrats(false);
-      }, 4000);
-    }
-  } catch (err) {
-    console.error("Erro ao carregar progresso", err);
-  } finally {
-    setLoading(false);
   }
-}
   // função para resetar (útil para debug / testes)
   async function resetProgressConfirm() {
     try {
@@ -178,17 +179,29 @@ export default function LevelsTabuleiro({ navigation, route }) {
               resizeMode="contain"
             />
 
-            {/* ÁUDIO AGORA NA DIREITA */}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => {
-                speak?.("Toque em um nível para começar");
-              }}
-              style={styles.audioButtonRight}
-              accessibilityLabel="Botão de áudio"
-            >
-              <Text style={styles.audioIcon}>🔊</Text>
-            </TouchableOpacity>
+            {/* ÁUDIO: container absoluto com os dois botões lado a lado */}
+            <View style={styles.audioContainer}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() =>
+                  speak?.(
+                    "  Toque em 1 para iniciar o primeiro nível. Quando você concluir ele, os próximos níveis serão desbloqueados. Boa sorte! Assim que você completar todos os níveis, aperte no botãozinho de voltar, logo abaixo, para reiniciar o progresso dos níveis"
+                  )
+                }
+                style={styles.audioButton}
+                accessibilityLabel="Botão de áudio"
+              >
+                <Text style={styles.audioIcon}>🔊</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => Speech.stop()}
+                style={styles.muteButton}
+                accessibilityLabel="Parar fala"
+              >
+                <Text style={styles.muteIcon}>🔇</Text>
+              </TouchableOpacity>
+            </View>
 
             {/* conteúdo real do cartão */}
             <View style={styles.board}>
@@ -410,6 +423,42 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 16,
+  },
+
+  audioContainer: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    zIndex: 10,
+    top: 35
+  },
+
+  audioButton: {
+    width: 50,
+    height: 52,
+    borderRadius: 25,
+    alignItems: "center",
+    justifyContent: "center",
+    top: 1
+  },
+
+  audioIcon: {
+    fontSize: 25,
+  },
+
+  muteButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    top: 4
+  },
+
+  muteIcon: {
+    fontSize: 24,
   },
 
 });

@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import useTTS from '../utils/useTTS';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Speech from "expo-speech";
 
 // habilita LayoutAnimation no Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -204,7 +205,7 @@ export default function QuebraCabecaNiveis({ route, navigation }) {
     setRoundResults([]);
     clearRoundState();
     setShowCongrats(false);
-    speak?.(`Nível ${lv}. Vamos começar.`);
+    // speak?.(`Nível ${lv}. Vamos começar.`);
   }
 
   // inicia ao montar e quando level mudar
@@ -274,7 +275,7 @@ export default function QuebraCabecaNiveis({ route, navigation }) {
 
   // preparar alternativas depois de ambos os slots preenchidos (ou auto-placed)
   function prepareChoicesAndShow() {
-    if (!currentRound) return;
+    if (!currentRound) return;  top: 
     if (!placedLeft || !placedRight) return;
 
     const a = Number(placedLeft.count);
@@ -490,13 +491,32 @@ export default function QuebraCabecaNiveis({ route, navigation }) {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.speakerButton, { marginLeft: -40 }]}
-              onPress={() => speak(`Vamos jogar! Nível ${level}`)}
-            >
-              <Text style={styles.speakerEmoji}>🔊</Text>
-            </TouchableOpacity>
 
+            {/* ÁUDIO: 2 botões lado a lado */}
+            {/* ÁUDIO: 2 botões lado a lado */}
+            {/* ÁUDIO: 2 botões lado a lado */}
+            <View style={styles.audioContainer}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() =>
+                  speak?.(
+                    `  Você abriu o nível ${level}. Olhe as quantidades nos dois quadradinhos em verde, depois olha a operação, se é soma, ou , subtração e marque a alternativa correta, nos quadradinhos abaixo`
+                  )
+                }
+                style={styles.audioButton}
+                accessibilityLabel="Botão de áudio"
+              >
+                <Text style={styles.audioIcon}>🔊</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => Speech.stop()}
+                style={styles.muteButton}
+                accessibilityLabel="Parar fala"
+              >
+                <Text style={styles.muteIcon}>🔇</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </View>
@@ -715,4 +735,42 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 30,
   },
+
+  /* --- ÁUDIO (botões) --- */
+  audioContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: -75
+  },
+
+  audioButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    top: 2
+  },
+
+  audioIcon: {
+    fontSize: 28,
+  },
+
+  muteButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 12,
+    top: 6
+  },
+
+  muteIcon: {
+    fontSize: 25,
+  },
+
+
 });
+
+
