@@ -176,16 +176,29 @@ export default function LevelsDomino({ navigation, route }) {
             />
 
             {/* ÁUDIO AGORA NA DIREITA */}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => {
-                speak?.("Toque em um nível para começar");
-              }}
-              style={styles.audioButtonRight}
-              accessibilityLabel="Botão de áudio"
-            >
-              <Text style={styles.audioIcon}>🔊</Text>
-            </TouchableOpacity>
+            {/* ÁUDIO: container absoluto com os dois botões lado a lado */}
+            <View style={styles.audioContainer}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() =>
+                  speak?.(
+                    "Toque em 1 para iniciar o primeiro nível. Quando você concluir ele, os próximos níveis serão desbloqueados. Boa sorte!"
+                  )
+                }
+                style={styles.audioButton}
+                accessibilityLabel="Botão de áudio"
+              >
+                <Text style={styles.audioIcon}>🔊</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => Speech.stop()}
+                style={styles.muteButton}
+                accessibilityLabel="Parar fala"
+              >
+                <Text style={styles.muteIcon}>🔇</Text>
+              </TouchableOpacity>
+            </View>
 
             {/* conteúdo real do cartão */}
             <View style={styles.board}>
@@ -395,7 +408,7 @@ const styles = StyleSheet.create({
     fontSize: 30,
     textAlign: "center",
   },
-    resetButton: {
+  resetButton: {
     backgroundColor: "#EC707A",
     paddingVertical: 10,
     paddingHorizontal: 20,
@@ -407,6 +420,40 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 16,
+  },
+
+  audioContainer: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    zIndex: 10,
+    top: 35
+  },
+
+  audioButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 25,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  audioIcon: {
+    fontSize: 25,
+  },
+
+  muteButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  muteIcon: {
+    fontSize: 25,
   },
 
 });

@@ -27,9 +27,9 @@ export default function PinSetupScreen({ navigation }) {
       }
     })();
 
-    setTimeout(() => speak(
-      'Agora vamos configurar um PIN de seis dígitos. Digite o mesmo PIN nos dois quadradinhos abaixo. Você também pode ativar a biometria, caso o seu celular permita.'
-    ), 300);
+    // setTimeout(() => speak(
+    //   'Agora vamos configurar um PIN de seis dígitos. Digite o mesmo PIN nos dois quadradinhos abaixo. Você também pode ativar a biometria, caso o seu celular permita.'
+    // ), 300);
   }, []);
 
   const validatePin = (p) => /^\d{6}$/.test(p);
@@ -126,7 +126,7 @@ export default function PinSetupScreen({ navigation }) {
         </Text>
 
         <View style={{ flexDirection: 'row' }}>
-          <TouchableOpacity onPress={() => speak('Vamos configurar o PIN')} style={{ marginHorizontal: 6 }}>
+          <TouchableOpacity onPress={() => speak('  Agora vamos configurar um PIN de seis dígitos. Digite o mesmo PIN nos dois quadradinhos abaixo. Você também pode ativar a biometria, caso o seu celular permita.   Aperte em 1 para ativar a biometria, aproximando seu dedo do sensor de biometria do seu celular.  Depois, aperte em 2 para testar a biometria. Em seguida, Aperte em 3. para concluir o cadastro e ir para a tela de login ')} style={{ marginHorizontal: 6 }}>
             <Text style={{ fontSize: 28 }}>🔊</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => Speech.stop()} style={{ marginHorizontal: 6 }}>

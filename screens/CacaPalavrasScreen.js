@@ -13,6 +13,8 @@ import {
 import useTTS from "../utils/useTTS";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Speech from "expo-speech";
+
 
 const MIN_GRID = 6;
 const MAX_GRID = 45;
@@ -134,7 +136,7 @@ export default function CacaPalavrasScreen() {
 
   useEffect(() => {
     // anúncio inicial por voz (útil para jogadores que não leem)
-    speak(`Vamos jogar! As palavras do nível são: ${SEARCH_WORDS.join(", ")}`);
+    // speak(`Vamos jogar! As palavras do nível são: ${SEARCH_WORDS.join(", ")}`);
   }, [SEARCH_WORDS, speak]);
 
   useEffect(() => {
@@ -283,7 +285,7 @@ export default function CacaPalavrasScreen() {
                     width: headerIconSize + 20,
                     height: headerIconSize + 20,
                     borderRadius: (headerIconSize + 20) / 2,
-                    transform: [{ translateX: -10 }],
+                    transform: [{ translateX: -2 }],
                   },
                 ]}
               >
@@ -307,15 +309,30 @@ export default function CacaPalavrasScreen() {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.speakerButton}
-              onPress={() => speak(`Vamos jogar! Nível ${levelNum}`)}
-              activeOpacity={0.75}
-              accessible
-              accessibilityLabel="Ouvir instrução em áudio"
-            >
-              <Text style={styles.speakerEmoji}>🔊</Text>
-            </TouchableOpacity>
+            {/* ÁUDIO: 2 botões lado a lado */}
+            <View style={styles.audioContainer}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() =>
+                  speak?.(
+                    `Vamos jogar! As palavras do nível são: ${SEARCH_WORDS.join(", ")}. Você deve encontrá-las no caça-palavras.`
+                  )
+                }
+                style={styles.audioButton}
+                accessibilityLabel="Botão de áudio"
+              >
+                <Text style={styles.audioIcon}>🔊</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => Speech.stop()}
+                style={styles.muteButton}
+                accessibilityLabel="Parar fala"
+              >
+                <Text style={styles.muteIcon}>🔇</Text>
+              </TouchableOpacity>
+            </View>
+
           </View>
         </View>
 
@@ -681,4 +698,37 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     fontSize: 16,
   },
+  /* --- ÁUDIO (botões) --- */
+  audioContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    // se quiser empurrar mais para baixo dentro do header, use marginTop: 12
+    // ex: marginTop: 12,
+  },
+
+  audioButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  
+  },
+
+  audioIcon: {
+    fontSize: 28,
+  },
+
+  muteButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+    alignItems: "center",
+    top: 10
+  },
+
+  muteIcon: {
+    fontSize: 25,
+  },
+
 });

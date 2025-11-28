@@ -14,11 +14,11 @@ export default function LoginScreen({ navigation }) {
     (async () => {
       const enabled = await isBiometryEnabled();
       setBiometryOn(enabled);
-      if (enabled) {
-        speak('A autenticação por biometria está ativa. Toque para autenticar com biometria ou digite o PIN.');
-      } else {
-        speak('Digite seu PIN de seis dígitos no quadradinho abaixo. Caso tenha esquecido, aperte no botão para criar um novo PIN.');
-      }
+      // if (enabled) {
+      //   speak('A autenticação por biometria está ativa. Toque em 1 para autenticar com biometria ou digite o PIN.');
+      // } else {
+      //   speak('Digite seu PIN de seis dígitos no quadradinho abaixo. Caso tenha esquecido, aperte no botão para criar um novo PIN.');
+      // }
     })();
   }, []);
 
@@ -76,7 +76,7 @@ export default function LoginScreen({ navigation }) {
         {/* Botões de áudio */}
         <View style={{ flexDirection: 'row' }}>
           <TouchableOpacity
-            onPress={() => speak('Bem-vindo ao app')}
+            onPress={() => speak(' Toque em 1 para logar com a sua biometria cadastrada. Em 2. você pode digitar seu PIN de seis números no quadradinho abaixo. Caso tenha esquecido o PIN, aperte em 3 para criar um novo.')}
             style={{ marginRight: 12 }}
           >
             <Text style={{ fontSize: 28 }}>🔊</Text>

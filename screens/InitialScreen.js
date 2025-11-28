@@ -11,7 +11,7 @@ export default function InitialScreen({ navigation }) {
 
   const falarConteudo = () => {
     speak(
-      'Bem vindo. Toque em 1 para cadastrar-se e configurar seu PIN ou biometria. Ou toque em 2 para fazer login e entrar no aplicativo.'
+      '  Bem vindo. Toque em 1 para cadastrar-se e configurar seu PIN ou biometria. Ou toque em 2 para fazer login e entrar no aplicativo.'
     );
   };
 

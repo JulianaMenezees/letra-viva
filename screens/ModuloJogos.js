@@ -7,7 +7,7 @@ export default function ModuloJogos({ navigation }) {
 
   useEffect(() => {
     speak(
-      'Você está no módulo de jogos. Aqui você pode treinar seus conhecimentos jogando! Aperte em um dos botões para começar.'
+      ' Você está no módulo de jogos. Aqui você pode treinar seus conhecimentos jogando! Aperte em 1 para jogar o caça palavras. Em 2 para jogar o jogo da memória. Em 3 para jogar dominó. Em 4 para fazer continhas. E em 5 para jogar na pista de jogos.'
     );
   }, []);
 
