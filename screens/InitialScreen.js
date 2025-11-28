@@ -137,7 +137,7 @@ export default function InitialScreen({ navigation }) {
         source={require('../assets/images/institucional/home__idosos.png')}
         style={{
           width: 420,
-          height: 205,
+          height: 200,
           alignSelf: 'center', // mantém centralizada
         }}
         imageStyle={{ resizeMode: 'contain' }}
