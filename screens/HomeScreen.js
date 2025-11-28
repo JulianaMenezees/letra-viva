@@ -114,78 +114,34 @@ export default function HomeScreen({ navigation }) {
       </View>
 
       {/* MODAL DO MENU DE SEGURANÇA */}
-      <Modal
-        visible={menuVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={toggleMenu}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.menuContainer}>
-            <Text style={styles.menuTitulo}>Menu de Segurança</Text>
-            
-            <ScrollView style={styles.menuScroll}>
-              <LargeButton
-                title="👤 Perfil"
-                color="#8AC6D1"
-                onPress={() => {
-                  setMenuVisible(false);
-                  navigation.navigate('Perfil');
-                }}
-              />
+      {/* MODAL DO MENU DE SEGURANÇA */}
+<Modal
+  visible={menuVisible}
+  transparent
+  animationType="slide"
+  onRequestClose={toggleMenu}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.menuContainer}>
+      <Text style={styles.menuTitulo}>Menu de Segurança</Text>
+      
+      <View style={styles.menuContent}>
+       <LargeButton
+          title="🔒 Sair da Conta"
+          color="#FF6B6B"
+          onPress={() => {
+            setMenuVisible(false);
+            handleLogout();
+          }}
+        />
+      </View>
 
-              <LargeButton
-                title="⚙️ Configurações"
-                color="#9a5fcc"
-                onPress={() => {
-                  setMenuVisible(false);
-                  navigation.navigate('Configuracoes');
-                }}
-              />
-
-              <LargeButton
-                title="🔒 Alterar PIN"
-                color="#ec707a"
-                onPress={() => {
-                  setMenuVisible(false);
-                  navigation.navigate('AlterarPIN');
-                }}
-              />
-
-              <LargeButton
-                title="📊 Estatísticas"
-                color="#4CAF50"
-                onPress={() => {
-                  setMenuVisible(false);
-                  navigation.navigate('Estatisticas');
-                }}
-              />
-
-              <LargeButton
-                title="❓ Ajuda"
-                color="#FFB703"
-                onPress={() => {
-                  setMenuVisible(false);
-                  navigation.navigate('Ajuda');
-                }}
-              />
-
-              <LargeButton
-                title="🔒 Sair da Conta"
-                color="#FF6B6B"
-                onPress={() => {
-                  setMenuVisible(false);
-                  handleLogout();
-                }}
-              />
-            </ScrollView>
-
-            <TouchableOpacity style={styles.fecharMenu} onPress={toggleMenu}>
-              <Text style={styles.fecharTexto}>Fechar Menu</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <TouchableOpacity style={styles.fecharMenu} onPress={toggleMenu}>
+        <Text style={styles.fecharTexto}>Fechar Menu</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
     </View>
   );
 }
@@ -295,4 +251,8 @@ linhaModulos: {
     fontSize: 16,
     fontWeight: 'bold',
   },
+  menuContent: {
+  alignItems: 'center',
+  justifyContent: 'center',
+},
 });

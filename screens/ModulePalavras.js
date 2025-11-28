@@ -339,14 +339,14 @@ export default function ModulePalavras({ navigation }) {
           {/* BOLINHAS DE CONTROLE DE ÁUDIO */}
           <View style={styles.controlesContainer}>
             <TouchableOpacity 
-              style={[styles.bolinhaControle, {backgroundColor: '#4CAF50'}]}
+              style={[styles.bolinhaControle, {backgroundColor: '#ADD778'}]}
               onPress={falarConteudo}
             >
               <Text style={styles.bolinhaTexto}>🔊</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={[styles.bolinhaControle, {backgroundColor: '#F44336'}]}
+              style={[styles.bolinhaControle, {backgroundColor: '#EC707A'}]}
               onPress={() => Speech.stop()}
             >
               <Text style={styles.bolinhaTexto}>🔇</Text>
@@ -371,14 +371,14 @@ export default function ModulePalavras({ navigation }) {
           {/* BOLINHAS DE CONTROLE DE ÁUDIO */}
           <View style={styles.controlesContainer}>
             <TouchableOpacity 
-              style={[styles.bolinhaControle, {backgroundColor: '#4CAF50'}]}
+              style={[styles.bolinhaControle, {backgroundColor: '#ADD778'}]}
               onPress={falarConteudo}
             >
               <Text style={styles.bolinhaTexto}>🔊</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
-              style={[styles.bolinhaControle, {backgroundColor: '#F44336'}]}
+              style={[styles.bolinhaControle, {backgroundColor: '#EC707A'}]}
               onPress={() => Speech.stop()}
             >
               <Text style={styles.bolinhaTexto}>🔇</Text>
