@@ -24,22 +24,27 @@ export default function ModuleMatematica({ navigation }) {
 
   const atividade = mathActivities[index];
 
-  useEffect(() => {
-    setFeedback('');
-    setRespondido(false);
-    
+  // --- FUNÇÃO DE FALA (Extraída para ser usada no botão e no início) ---
+  const falarConteudo = () => {
     let instrucaoParaFalar = atividade.instrucao;
     if (atividade.tipo === 'toque_imagem') {
       instrucaoParaFalar = `${atividade.instrucao}. Toque na imagem correta.`;
     }
-
+    Speech.stop(); 
     Speech.speak(instrucaoParaFalar, { language: 'pt-BR' });
+  };
+
+  useEffect(() => {
+    setFeedback('');
+    setRespondido(false);
+    falarConteudo();
 
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
+      Speech.stop(); 
     };
   }, [index]);
 
@@ -85,7 +90,6 @@ export default function ModuleMatematica({ navigation }) {
   };
 
   const renderOpcoes = () => {
-    // --- 'toque_imagem' (Sem bordas) ---
     if (atividade.tipo === 'toque_imagem') {
       return (
         <View style={styles.imageOptionsContainer}>
@@ -135,22 +139,24 @@ export default function ModuleMatematica({ navigation }) {
 
         <Text style={styles.instrucao}>{atividade.instrucao}</Text>
 
-        <View style={{ width: '100%', alignItems: 'center', marginBottom: 20 }}>
-            <LargeButton
-            title="🔊 Ouvir de novo"
-            color={COLORS.amarelo}
-            onPress={() => {
-                let instrucaoParaFalar = atividade.instrucao;
-                if (atividade.tipo === 'toque_imagem') {
-                instrucaoParaFalar = `${atividade.instrucao}. Toque na imagem correta.`;
-                }
-                Speech.speak(instrucaoParaFalar, { language: 'pt-BR' });
-            }}
-            style={{ width: '90%', maxWidth: 350 }}
-            />
+        {/* --- BOLINHAS DE CONTROLE DE ÁUDIO --- */}
+        <View style={styles.controlesContainer}>
+            <TouchableOpacity 
+              style={[styles.bolinhaControle, {backgroundColor: '#4CAF50'}]}
+              onPress={falarConteudo}
+            >
+              <Text style={styles.bolinhaTexto}>🔊</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.bolinhaControle, {backgroundColor: '#F44336'}]}
+              onPress={() => Speech.stop()}
+            >
+              <Text style={styles.bolinhaTexto}>🔇</Text>
+            </TouchableOpacity>
         </View>
+        {/* ------------------------------------------- */}
 
-        {/* --- CENTRALIZAÇÃO DA IMAGEM --- */}
         {atividade.tipo !== 'toque_imagem' && atividade.imagem && (
           <View style={styles.imagemContainer}>
              <Image source={atividade.imagem} style={styles.imagemPrincipal} />
@@ -204,9 +210,33 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
+    marginBottom: 10,
+    width: '100%',
+  },
+  // --- ESTILOS DAS BOLINHAS DE ÁUDIO ---
+  controlesContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 30,
     marginBottom: 20,
     width: '100%',
   },
+  bolinhaControle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30, 
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  bolinhaTexto: {
+    fontSize: 28,
+  },
+  // -------------------------------------
   imagemContainer: {
     width: '100%',
     alignItems: 'center', 
